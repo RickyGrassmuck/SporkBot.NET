@@ -65,10 +65,10 @@ namespace SysBot.Pokemon
                                         (int)Species.Eevee, (int)Species.Vaporeon, (int)Species.Jolteon, (int)Species.Flareon, (int)Species.Omanyte, (int)Species.Kabuto, (int)Species.Aerodactyl,
                                         (int)Species.Snorlax, (int)Species.Articuno, (int)Species.Zapdos, (int)Species.Moltres, (int)Species.Dragonite, (int)Species.Mewtwo, (int)Species.Mew,
                                         (int)Species.Crobat, (int)Species.Politoed, (int)Species.Espeon, (int)Species.Umbreon, (int)Species.Wobbuffet, (int)Species.Scizor, (int)Species.Heracross,
-                                        (int)Species.Corsola, (int)Species.Octillery, (int)Species.Larvitar, (int)Species.Amoonguss, (int)Species.Golurk, (int)Species.Silvally, (int)Species.TapuBulu,
+                                        (int)Species.Corsola, (int)Species.Octillery, (int)Species.Larvitar, (int)Species.Amoonguss, (int)Species.TapuBulu, (int)Species.Whiscash, (int)Species.Torchic,
                                         (int)Species.TapuFini, (int)Species.TapuKoko, (int)Species.TapuLele, (int)Species.Solgaleo, (int)Species.Lunala, (int)Species.Necrozma, (int)Species.Poipole,
                                         (int)Species.Tyranitar, (int)Species.Nidoking, (int)Species.Nidoqueen, (int)Species.Delibird, (int)Species.Kingdra, (int)Species.Porygon2, (int)Species.Miltank,
-                                        (int)Species.Raikou, (int)Species.Entei, (int)Species.Suicune, (int)Species.Lugia, (int)Species.HoOh, (int)Species.Celebi, (int)Species.Sceptile, (int)Species.Torchic,
+                                        (int)Species.Raikou, (int)Species.Entei, (int)Species.Suicune, (int)Species.Lugia, (int)Species.HoOh, (int)Species.Celebi, (int)Species.Sceptile, 
                                         (int)Species.Blaziken, (int)Species.Swampert, (int)Species.Linoone, (int)Species.Ludicolo, (int)Species.Gardevoir, (int)Species.Sableye, (int)Species.Mawile,
                                         (int)Species.Aggron, (int)Species.Manectric, (int)Species.Sharpedo, (int)Species.Altaria, (int)Species.Lunatone, (int)Species.Solrock, (int)Species.Lileep,
                                         (int)Species.Anorith,  (int)Species.Milotic, (int)Species.Walrein, (int)Species.Salamence, (int)Species.Metagross, (int)Species.Latios, (int)Species.Latias,
@@ -83,8 +83,7 @@ namespace SysBot.Pokemon
                                         (int)Species.Sylveon, (int)Species.Pumpkaboo, (int)Species.Xerneas, (int)Species.Yveltal, (int)Species.Zygarde, (int)Species.Diancie, (int)Species.Volcanion,
                                         (int)Species.Rockruff, (int)Species.Lycanroc, (int)Species.Salazzle, (int)Species.Bewear, (int)Species.Steenee, (int)Species.Comfey, (int)Species.Turtonator,
                                         (int)Species.Mimikyu, (int)Species.Magearna, (int)Species.Marshadow, (int)Species.Zeraora, (int)Species.Milcery, (int)Species.Zarude, (int)Species.Goomy,
-                                        (int)Species.Toxapex, (int)Species.Oranguru, (int)Species.Passimian, (int)Species.Drampa, (int)Species.Naganadel, (int)Species.Tangrowth, (int)Species.Feebas,
-                                        (int)Species.Whiscash };
+                                        (int)Species.Toxapex, (int)Species.Oranguru, (int)Species.Passimian, (int)Species.Drampa, (int)Species.Naganadel, (int)Species.Tangrowth, (int)Species.Feebas };
 
         public static int[] CanBeShinyCherish = { (int)Species.Charizard, (int)Species.Pikachu, (int)Species.Machamp, (int)Species.Gengar, (int)Species.Magikarp, (int)Species.Gyarados, (int)Species.Eevee,
                                                   (int)Species.Mewtwo, (int)Species.Tyranitar, (int)Species.HoOh, (int)Species.Celebi, (int)Species.Gardevoir, (int)Species.Milotic,
@@ -118,11 +117,9 @@ namespace SysBot.Pokemon
 
         public static int[] GenesectDrives = { 0, 116, 117, 118, 119 };
 
-        public static int[] Amped = { (int)Nature.Adamant, (int)Nature.Brave, (int)Nature.Docile, (int)Nature.Hardy, (int)Nature.Hasty, (int)Nature.Impish, (int)Nature.Jolly,
-                                      (int)Nature.Lax, (int)Nature.Naive, (int)Nature.Naughty, (int)Nature.Rash, (int)Nature.Quirky, (int)Nature.Sassy };
+        public static int[] Amped = { 3, 4, 2, 8, 9, 19, 22, 11, 13, 14, 0, 6, 24 };
 
-        public static int[] LowKey = { (int)Nature.Bashful, (int)Nature.Bold, (int)Nature.Calm, (int)Nature.Careful, (int)Nature.Gentle, (int)Nature.Lonely,
-                                       (int)Nature.Mild, (int)Nature.Modest, (int)Nature.Quiet, (int)Nature.Relaxed, (int)Nature.Serious, (int)Nature.Timid };
+        public static int[] LowKey = { 1, 5, 7, 10, 12, 15, 16, 17, 18, 20, 21, 23 };
 
         public static void RngRoutine(PKM pkm)
         {
