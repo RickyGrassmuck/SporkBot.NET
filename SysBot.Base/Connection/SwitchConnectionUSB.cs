@@ -15,7 +15,6 @@ namespace SysBot.Base
         private UsbEndpointWriter? writer;
         private const int MaximumTransferSize = 468;
         private readonly object _sync = new();
-        public static List<string> PortIndexesAdded = new();
 
         public SwitchConnectionUSB(SwitchBotConfig cfg)
         {
@@ -176,27 +175,6 @@ namespace SysBot.Base
             A[] result = new A[length];
             Array.Copy(data, index, result, 0, length);
             return result;
-        }
-
-        public static string GetUsbPortIndex(IEnumerable<string> bots)
-        {
-            string av = string.Empty;
-            foreach (UsbRegistry ur in UsbDevice.AllLibUsbDevices)
-            {
-                ur.DeviceProperties.TryGetValue("Address", out object addr);
-                bool added = bots.Contains(addr.ToString());
-                if (ur.Vid == 0x057E && ur.Pid == 0x3000 && !added)
-                {
-                    UsbDevice usbDevice = ur.Device;
-                    if (usbDevice != null)
-                    {
-                        av = addr.ToString();
-                        PortIndexesAdded.Add(av);
-                        break;
-                    }
-                }
-            }
-            return av;
         }
     }
 }

@@ -11,6 +11,7 @@ namespace SysBot.Base
         public int Port { get; set; } = 6000;
         public ConnectionType ConnectionType { get; set; }
         public string UsbPortIndex { get; set; } = string.Empty;
+        public bool IsValidUSBIndex() => int.TryParse(UsbPortIndex, out _);
 
         public bool IsValidIP() => IPAddress.TryParse(IP, out _);
         public IPAddress GetAddress() => IPAddress.Parse(IP);

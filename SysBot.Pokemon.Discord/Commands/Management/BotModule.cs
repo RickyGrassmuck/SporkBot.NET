@@ -29,7 +29,7 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetDetailedSummary(PokeRoutineExecutor z)
         {
-            return $"- {z.Connection.IP}{(z.Config.ConnectionType == ConnectionType.USB ? "[USB"+z.Config.UsbPortIndex+"]" : string.Empty)} | {z.Connection.Name} - {z.Config.CurrentRoutineType} ~ {z.LastTime:hh:mm:ss} | {z.LastLogged}";
+            return $"- {(z.Config.ConnectionType == ConnectionType.USB ? "USB" + z.Config.UsbPortIndex : z.Connection.IP)} | {z.Connection.Name} - {z.Config.CurrentRoutineType} ~ {z.LastTime:hh:mm:ss} | {z.LastLogged}";
         }
 
         [Command("botStart")]

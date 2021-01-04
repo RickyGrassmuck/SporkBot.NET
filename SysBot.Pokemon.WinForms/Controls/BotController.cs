@@ -69,7 +69,7 @@ namespace SysBot.Pokemon.WinForms
 
         public void ReloadStatus()
         {
-            L_Left.Text = Config.ConnectionType == ConnectionType.WiFi ? $"{Config.IP}{Environment.NewLine}{Config.InitialRoutine}" : $"{Config.ConnectionType}{Config.UsbPortIndex}{Environment.NewLine}{Config.InitialRoutine}";
+            L_Left.Text = $"{(Config.ConnectionType == ConnectionType.WiFi ? Config.IP : "USB" + Config.UsbPortIndex)}{Environment.NewLine}{Config.InitialRoutine}";
         }
 
         private DateTime LastUpdateStatus = DateTime.Now;
@@ -79,7 +79,7 @@ namespace SysBot.Pokemon.WinForms
             ReloadStatus();
             var bot = b.Bot;
             L_Description.Text = $"[{bot.LastTime:hh:mm:ss}] {bot.Connection.Name}: {bot.LastLogged}";
-            L_Left.Text = Config.ConnectionType == ConnectionType.WiFi ? $"{Config.IP}{Environment.NewLine}{Config.InitialRoutine}" : $"{Config.ConnectionType}{Config.UsbPortIndex}{Environment.NewLine}{Config.InitialRoutine}";
+            L_Left.Text = $"{(Config.ConnectionType == ConnectionType.WiFi ? Config.IP : "USB" + Config.UsbPortIndex)}{Environment.NewLine}{Config.InitialRoutine}";
 
             var lastTime = bot.LastTime;
             if (!b.IsRunning)

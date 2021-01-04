@@ -24,7 +24,7 @@ namespace SysBot.Base
             UsbPortIndex = cfg.UsbPortIndex;
             ConnectionUSB = new SwitchConnectionUSB(cfg);
             Config = cfg;
-            Name = $"{IP}{(cfg.ConnectionType == ConnectionType.USB ? " [#"+UsbPortIndex+"]" : string.Empty)}: {GetType().Name}";
+            Name = $"{(cfg.ConnectionType == ConnectionType.USB ? "USB" + UsbPortIndex : IP)}: {GetType().Name}";
             Log("Connection details created!");
         }
     }

@@ -178,7 +178,7 @@ namespace SysBot.Pokemon.WinForms
             if (!AddBot(cfg))
             {
                 WinFormsUtil.Alert(cfg.ConnectionType == ConnectionType.WiFi ? "Unable to add bot; ensure details are valid and not duplicate with an already existing bot."
-                    : "Unable to add bot; ensure additional USB bots are plugged in.");
+                    : "Unable to add bot; ensure details are valid, and that your Switch(es) are plugged in.");
                 return;
             }
             System.Media.SystemSounds.Asterisk.Play();
@@ -186,7 +186,7 @@ namespace SysBot.Pokemon.WinForms
 
         private bool AddBot(PokeBotConfig cfg)
         {
-            if (!cfg.IsValidIP() || cfg.UsbPortIndex == "" && cfg.ConnectionType == ConnectionType.USB)
+            if ((!cfg.IsValidIP() && cfg.ConnectionType == ConnectionType.WiFi) || (!cfg.IsValidUSBIndex() && cfg.ConnectionType == ConnectionType.USB))
                 return false;
 
             var newbot = RunningEnvironment.CreateBotFromConfig(cfg);
@@ -231,10 +231,9 @@ namespace SysBot.Pokemon.WinForms
         {
             var type = (PokeRoutineType)WinFormsUtil.GetIndex(CB_Routine);
             var ip = TB_IP.Text;
+            var usbPortIndex = TB_USB_Addr.Text;
             var port = (int)NUD_Port.Value;
             var connectionType = (ConnectionType)WinFormsUtil.GetIndex(CB_ConnectionType);
-            var addedIndexes = Bots.Where(z => z.UsbPortIndex != string.Empty).Select(z => z.UsbPortIndex);
-            var usbPortIndex = SwitchConnectionUSB.GetUsbPortIndex(addedIndexes);
 
             var cfg = SwitchBotConfig.GetConfig<PokeBotConfig>(ip, port, connectionType, usbPortIndex);
             cfg.Initialize(type, connectionType);

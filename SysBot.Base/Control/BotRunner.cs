@@ -27,8 +27,6 @@ namespace SysBot.Base
             if (callStop)
                 match.Stop();
 
-            if (match.Bot.Config.ConnectionType == ConnectionType.USB)
-                SwitchConnectionUSB.PortIndexesAdded.Remove(match.Bot.Config.UsbPortIndex);
             return Bots.Remove(match);
         }
 
