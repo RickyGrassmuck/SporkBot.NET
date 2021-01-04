@@ -174,7 +174,6 @@ namespace SysBot.Pokemon
                 pkm.Species == (int)Species.Toxtricity && pkm.AltForm > 0 ? LowKey[rng.Next(LowKey.Length)] : 
                 pkm.Species == (int)Species.Toxtricity && pkm.AltForm == 0 ? Amped[rng.Next(Amped.Length)] : rng.Next(25);
             pkm.StatNature = pkm.Nature;
-            pkm.MetDate = DateTime.Parse("2020/10/20");
             pkm.IVs = pkm.FatefulEncounter ? pkm.IVs : pkm.SetRandomIVs(5);
             pkm.ClearHyperTraining();
             pkm.SetSuggestedMoves(false);
@@ -207,6 +206,8 @@ namespace SysBot.Pokemon
 
             if (!pkm.FatefulEncounter || !LegalEdits.ValidBall(pkm))
                 BallApplicator.ApplyBallLegalRandom(pkm);
+
+            _ = TrashBytes(pkm);
         }
 
         public static PKM EggRngRoutine(List<string> content, List<string> trainerInfo, int form1, int form2, int evo1, int evo2)
@@ -283,7 +284,6 @@ namespace SysBot.Pokemon
                 return;
 
             var dittoStats = new string[] { "ATK", "SPE", "SPA" };
-            pk8.MetDate = DateTime.Parse("2020/10/20");
             pk8.StatNature = pk8.Nature;
             pk8.SetAbility(7);
             pk8.SetAbilityIndex(1);
@@ -293,12 +293,14 @@ namespace SysBot.Pokemon
             pk8.Met_Location = 154;
             pk8.Ball = 21;
             pk8.IVs = new int[] { 31, pk8.Nickname.Contains(dittoStats[0]) ? 0 : 31, 31, pk8.Nickname.Contains(dittoStats[1]) ? 0 : 31, pk8.Nickname.Contains(dittoStats[2]) ? 0 : 31, 31 };
-            pk8.ClearNickname();
             pk8.SetSuggestedHyperTrainingData();
+            _ = TrashBytes(pk8);
         }
 
         public static void EggTrade(PK8 pkm)
         {
+            pkm = (PK8)TrashBytes(pkm);
+            pkm.IsNicknamed = true;
             pkm.Nickname = pkm.Language switch
             {
                 1 => "タマゴ",
@@ -313,7 +315,7 @@ namespace SysBot.Pokemon
 
             pkm.IsEgg = true;
             pkm.Egg_Location = 60002;
-            pkm.EggMetDate = pkm.MetDate = DateTime.Parse("2020/10/20");
+            pkm.EggMetDate = pkm.MetDate;
             pkm.HeldItem = 0;
             pkm.CurrentLevel = 1;
             pkm.EXP = 0;
@@ -417,6 +419,15 @@ namespace SysBot.Pokemon
                 (pk.IsEgg ? $"{int.Parse(splitTotal[1].Replace(" Eggs", "")) + 1} Eggs, " : splitTotal[1].Trim() + ", ") +
                 (pk.IsShiny ? $"{int.Parse(splitTotal[2].Replace(" Shiny", "")) + 1} Shiny, " : splitTotal[2].Trim());
             File.WriteAllText("EncounterLog.txt", string.Join("\n", content));
+        }
+
+        public static PKM TrashBytes(PKM pkm)
+        {
+            pkm.MetDate = DateTime.Parse("2020/10/20");
+            pkm.Nickname = "KOIKOIKOIKOI";
+            pkm.IsNicknamed = true;
+            pkm.ClearNickname();
+            return pkm;
         }
     }
 }

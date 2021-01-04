@@ -287,31 +287,39 @@ namespace SysBot.Pokemon
                 var adOT = System.Text.RegularExpressions.Regex.Match(clone.OT_Name, @"(YT$)|(YT\w*$)|(Lab$)|(\.\w*)|(TV$)|(PKHeX)|(FB:)|(SysBot)|(AuSLove)|(ShinyMart)").Value != ""
                     || System.Text.RegularExpressions.Regex.Match(clone.Nickname, @"(YT$)|(YT\w*$)|(Lab$)|(\.\w*)|(TV$)|(PKHeX)|(FB:)|(SysBot)|(AuSLove)|(ShinyMart)").Value != "";
 
-                if (adOT && clone.OT_Name != $"{TrainerName}")
+                var extraInfo = $"\nBall: {(Ball)clone.Ball}\nShiny: {(clone.ShinyXor == 0 ? "Square" : clone.ShinyXor <= 16 ? "Star" : "No")}{(clone.FatefulEncounter ? "" : $"\nOT: {TrainerName}")}";
+                var laInit = new LegalityAnalysis(clone);
+                if (laInit.Valid)
                 {
                     clone.OT_Name = clone.FatefulEncounter ? clone.OT_Name : $"{TrainerName}";
-                    clone.ClearNickname();
                     clone.PKRS_Infected = false;
                     clone.PKRS_Cured = false;
                     clone.PKRS_Days = 0;
                     clone.PKRS_Strain = 0;
-                    clone.MetDate = DateTime.Parse("2020/10/20");
-                    poke.SendNotification(this, $"```fix\nDetected an ad OT/Nickname with your {(Species)clone.Species}!```");
                 }
-                else
-                {
-                    poke.SendNotification(this, "```fix\nNo ad detected in Nickname or OT. Exiting trade...```");
-                    await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                    return PokeTradeResult.IllegalTrade;
-                }
-
-                var la = new LegalityAnalysis(clone);
-                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                else if (!laInit.Valid)
                 {
                     Log($"FixOT request has detected an invalid Pokémon: {(Species)clone.Species}");
                     if (DumpSetting.Dump)
                         DumpPokemon(DumpSetting.DumpFolder, "hacked", clone);
 
+                    poke.SendNotification(this, $"```fix\nShown Pokémon is invalid. Attempting to regenerate... \n{laInit.Report()}```");
+                    clone = (PK8)AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(ShowdownSet.GetShowdownText(clone) + extraInfo)), out _);
+                    var laRegen = new LegalityAnalysis(clone);
+                    if (laRegen.Valid)
+                        poke.SendNotification(this, $"```fix\nRegenerated and legalized your {(Species)clone.Species}!```");
+                }
+                else if (!adOT && laInit.Valid)
+                {
+                    poke.SendNotification(this, "```fix\nNo ad detected in Nickname or OT, and the Pokémon is legal. Exiting trade...```");
+                    await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+                    return PokeTradeResult.Aborted;
+                }
+
+                clone = (PK8)TradeExtensions.TrashBytes(clone);
+                var la = new LegalityAnalysis(clone);
+                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                {
                     var report = la.Report();
                     Log(report);
                     poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from fixing this. Exiting trade.");
@@ -324,8 +332,8 @@ namespace SysBot.Pokemon
                 if (Hub.Config.Legality.ResetHOMETracker)
                     clone.Tracker = 0;
 
-                poke.SendNotification(this, $"```fix\nFixed your {(Species)clone.Species}! Now confirm the trade!```");
-                Log($"Fixed Nickname/OT for {(Species)clone.Species}.");
+                poke.SendNotification(this, $"```fix\nNow confirm the trade!```");
+                Log($"Fixed Nickname/OT for {(Species)clone.Species}!");
 
                 await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 1_000, token).ConfigureAwait(false);
                 await Click(A, 0_800, token).ConfigureAwait(false);
