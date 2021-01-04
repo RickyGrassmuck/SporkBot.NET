@@ -289,7 +289,7 @@ namespace SysBot.Pokemon
 
                 var extraInfo = $"\nBall: {(Ball)clone.Ball}\nShiny: {(clone.ShinyXor == 0 ? "Square" : clone.ShinyXor <= 16 ? "Star" : "No")}{(clone.FatefulEncounter ? "" : $"\nOT: {TrainerName}")}";
                 var laInit = new LegalityAnalysis(clone);
-                if (laInit.Valid)
+                if (laInit.Valid && adOT)
                 {
                     clone.OT_Name = clone.FatefulEncounter ? clone.OT_Name : $"{TrainerName}";
                     clone.PKRS_Infected = false;
