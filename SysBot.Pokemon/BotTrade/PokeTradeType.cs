@@ -9,6 +9,5 @@
         FixOT,
         TradeCord,
         Dump,
-        Giveaway,
     }
 }

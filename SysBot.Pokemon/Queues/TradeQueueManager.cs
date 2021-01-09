@@ -13,7 +13,6 @@ namespace SysBot.Pokemon
         private readonly PokeTradeQueue<T> Clone = new(PokeTradeType.Clone);
         private readonly PokeTradeQueue<T> FixOT = new(PokeTradeType.FixOT);
         private readonly PokeTradeQueue<T> TradeCord = new(PokeTradeType.TradeCord);
-        private readonly PokeTradeQueue<T> Giveaway = new(PokeTradeType.Giveaway);
         private readonly PokeTradeQueue<T> Dump = new(PokeTradeType.Dump);
         public readonly TradeQueueInfo<T> Info;
         public readonly PokeTradeQueue<T>[] AllQueues;
@@ -36,7 +35,6 @@ namespace SysBot.Pokemon
                 PokeRoutineType.Clone => Clone,
                 PokeRoutineType.FixOT => FixOT,
                 PokeRoutineType.TradeCord => TradeCord,
-                PokeRoutineType.Giveaway => Giveaway,
                 PokeRoutineType.Dump => Dump,
                 _ => Trade,
             };
@@ -134,8 +132,6 @@ namespace SysBot.Pokemon
             if (TryDequeueInternal(PokeRoutineType.FixOT, out detail, out priority))
                 return true;
             if (TryDequeueInternal(PokeRoutineType.TradeCord, out detail, out priority))
-                return true;
-            if (TryDequeueInternal(PokeRoutineType.Giveaway, out detail, out priority))
                 return true;
             if (TryDequeueInternal(PokeRoutineType.Dump, out detail, out priority))
                 return true;

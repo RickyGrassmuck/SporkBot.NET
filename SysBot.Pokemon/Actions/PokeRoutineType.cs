@@ -9,7 +9,6 @@
         FlexTrade,
         LinkTrade,
         SeedCheck,
-        Giveaway,
         Clone,
         FixOT,
         TradeCord,
