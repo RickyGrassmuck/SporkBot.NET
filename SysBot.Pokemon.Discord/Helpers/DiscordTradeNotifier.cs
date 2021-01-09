@@ -57,7 +57,7 @@ namespace SysBot.Pokemon.Discord
             var tradedToUser = Data.Species;
             var message = tradedToUser != 0 ? $"Trade finished. Enjoy your {(Species)tradedToUser}!" : "Trade finished!";
             Trader.SendMessageAsync(message).ConfigureAwait(false);
-            if (result.Species != 0 && Hub.Config.Discord.ReturnPK8s || info.Type != PokeTradeType.Giveaway)
+            if (result.Species != 0 && Hub.Config.Discord.ReturnPK8s)
                 Trader.SendPKMAsync(result, "Here's what you traded me!").ConfigureAwait(false);
 
             if (info.Type == PokeTradeType.TradeCord)
