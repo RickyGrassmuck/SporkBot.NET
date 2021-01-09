@@ -11,8 +11,8 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord
 {
-    [Summary("Queues new Giveway trade")]
-    public class GiveawayModule : ModuleBase<SocketCommandContext>
+    [Summary("Generates and queues various silly trade additions")]
+    public class TradeAdditionsModule : ModuleBase<SocketCommandContext>
     {
         private static TradeQueueInfo<PK8> Info => SysCordInstance.Self.Hub.Queues.Info;
 
@@ -32,76 +32,66 @@ namespace SysBot.Pokemon.Discord
             });
             await ReplyAsync("These are the users who are currently waiting:", embed: embed.Build()).ConfigureAwait(false);
         }
+
         [Command("giveawaypool")]
         [Alias("gap")]
-        [Summary("Show a list of pokemon available for giveaway")]
+        [Summary("Show a list of Pokémon available for giveaway.")]
         [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
         public async Task DisplayGiveawayPoolCountAsync()
         {
-            var me = SysCordInstance.Self;
-            var hub = me.Hub;
-            var pool = hub.Ledy.Pool;
-            var count = pool.Count;
-            if (count > 0 && count < 20)
+            var pool = Info.Hub.Ledy.Pool;
+            if (pool.Count > 0)
             {
-                var lines = pool.Files.Select((z, i) => $"{i + 1:00}: {z.Key} = {(Species)z.Value.RequestInfo.Species}");
+                var lines = pool.Files.Select((z, i) => $"{i + 1}: {z.Key} = {(Species)z.Value.RequestInfo.Species}");
                 var msg = string.Join("\n", lines);
-
-                var embed = new EmbedBuilder();
-                embed.AddField(x =>
-                {
-                    x.Name = $"Count: {count}";
-                    x.Value = msg;
-                    x.IsInline = false;
-                });
-                await ReplyAsync("Giveaway Pool Details", embed: embed.Build()).ConfigureAwait(false);
+                await ListUtil("Giveaway Pool Details", msg).ConfigureAwait(false);
             }
-            else
-            {
-                await ReplyAsync($"Giveaway Pool Count: {count}").ConfigureAwait(false);
-            }
+            else await ReplyAsync($"Giveaway pool is empty.").ConfigureAwait(false);
         }
 
         [Command("giveaway")]
         [Alias("ga", "giveme", "gimme")]
-        [Summary("Makes trade you the specified giveaway pokemon.")]
+        [Summary("Makes the bot trade you the specified giveaway Pokémon.")]
         [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
-        public async Task GiveawayAsync([Summary("Start a Giveaway trade")][Remainder] string content)
+        public async Task GiveawayAsync([Remainder] string content)
         {
             var code = Info.GetRandomTradeCode();
+            await GiveawayAsync(code, content).ConfigureAwait(false);
+        }
+        
+        [Command("giveaway")]
+        [Alias("ga", "giveme", "gimme")]
+        [Summary("Makes the bot trade you the specified giveaway Pokémon.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
+        public async Task GiveawayAsync([Summary("Giveaway Code")] int code, [Remainder] string content)
+        {
             var pk = new PK8();
             content = ReusableActions.StripCodeBlock(content);
             pk.Nickname = content;
+            var pool = Info.Hub.Ledy.Pool;
 
-            if (pk.Nickname.ToLower() == "random")
+            if (pool.Count == 0)
             {
-                // Request a random giveaway prize
-                pk = Info.Hub.Ledy.Pool.GetRandomSurprise();
+                await ReplyAsync($"Giveaway pool is empty.").ConfigureAwait(false);
+                return;
             }
+            else if (pk.Nickname.ToLower() == "random") // Request a random giveaway prize.
+                pk = Info.Hub.Ledy.Pool.GetRandomSurprise();
             else
             {
-                var trade = Info.Hub.Ledy.GetLedyTrade(pk, Info.Hub.Config.Distribution.LedySpecies);
-                if (trade != null && trade.Receive != null)
-                {
+                var trade = Info.Hub.Ledy.GetLedyTrade(pk);
+                if (trade != null)
                     pk = trade.Receive;
-                }
                 else
                 {
-                    await ReplyAsync("Pokemon requests not available, us $giveaway pool for full list of available giveaways!").ConfigureAwait(false);
+                    await ReplyAsync($"Requested Pokémon not available, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
                     return;
                 }
             }
 
             var sig = Context.User.GetFavor();
-            await Context.AddToQueueAsync(code, Context.User.Username, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User).ConfigureAwait(false);
-
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Specific, Context.User).ConfigureAwait(false);
         }
-    }
-
-    [Summary("Generates and queues various silly trade additions")]
-    public class TradeAdditionsModule : ModuleBase<SocketCommandContext>
-    {
-        private static TradeQueueInfo<PK8> Info => SysCordInstance.Self.Hub.Queues.Info;
 
         [Command("fixOT")]
         [Alias("fix", "f")]
@@ -1283,7 +1273,7 @@ namespace SysBot.Pokemon.Discord
                     if (splice.Count == 0)
                         break;
 
-                    pageContent.Add(string.Join(", ", splice));
+                    pageContent.Add(string.Join(entry.Contains(",") ? ", " : "\n", splice));
                 }
             }
             else pageContent.Add(entry == "" ? emptyList : entry);
