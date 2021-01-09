@@ -456,6 +456,8 @@ namespace SysBot.Pokemon
                     counts.AddCompletedFixOTs();
                 else if (poke.Type == PokeTradeType.TradeCord)
                     counts.AddCompletedTradeCords();
+                else if (poke.Type == PokeTradeType.Giveaway)
+                    counts.AddCompletedGiveaways();
                 else
                     Hub.Counts.AddCompletedTrade();
 
