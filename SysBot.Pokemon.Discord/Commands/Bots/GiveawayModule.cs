@@ -76,7 +76,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            await Context.AddToQueueAsync(code, trainerName, sig, pk8, PokeRoutineType.Giveaway, PokeTradeType.Giveaway, usr).ConfigureAwait(false);
+            await Context.AddToQueueAsync(code, trainerName, sig, pk8, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, usr).ConfigureAwait(false);
         }
     }
 }
