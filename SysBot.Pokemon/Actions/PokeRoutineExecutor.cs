@@ -157,6 +157,17 @@ namespace SysBot.Pokemon
             LogUtil.LogInfo($"Saved file: {fn}", "Dump");
         }
 
+        public static void UploadGiveawayPokemon(string folder, string subfolder, PKM pk)
+        {
+            if (!Directory.Exists(folder))
+                return;
+            var dir = Path.Combine(folder, subfolder);
+            Directory.CreateDirectory(dir);
+            var fn = Path.Combine(dir, Util.CleanFileName(pk.FileName));
+            File.WriteAllBytes(fn, pk.DecryptedPartyData);
+            LogUtil.LogInfo($"Saved file: {fn}", "Giveaway");
+        }
+
         /// <summary>
         /// Identifies the trainer information and loads the current runtime language.
         /// </summary>

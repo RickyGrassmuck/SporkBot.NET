@@ -20,6 +20,8 @@ namespace SysBot.Pokemon
         /// <remarks>If null, will skip dumping.</remarks>
         private readonly IDumper DumpSetting;
 
+        private readonly IGiveaway GiveawaySetting;
+
         /// <summary>
         /// Synchronized start for multiple bots.
         /// </summary>
@@ -34,6 +36,7 @@ namespace SysBot.Pokemon
         {
             Hub = hub;
             DumpSetting = hub.Config.Folder;
+            GiveawaySetting = hub.Config.Giveaway;
         }
 
         private const int InjectBox = 0;
@@ -247,6 +250,9 @@ namespace SysBot.Pokemon
 
             if (poke.Type == PokeTradeType.Dump)
                 return await ProcessDumpTradeAsync(poke, token).ConfigureAwait(false);
+
+            if (poke.Type == PokeTradeType.GiveawayUpload)
+                return await ProcessGiveawayUploadAsync(poke, token).ConfigureAwait(false);
 
             // Wait for User Input...
             var pk = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 25_000, 1_000, token).ConfigureAwait(false);
@@ -503,7 +509,46 @@ namespace SysBot.Pokemon
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
             return PokeTradeResult.Success;
         }
+        private async Task<PokeTradeResult> ProcessGiveawayUploadAsync(PokeTradeDetail<PK8> detail, CancellationToken token)
+        {
+            int ctr = 0;
+            var time = TimeSpan.FromSeconds(Hub.Config.Trade.MaxDumpTradeTime);
+            var start = DateTime.Now;
+            var pkprev = new PK8();
+            while (ctr < Hub.Config.Trade.MaxDumpsPerTrade && DateTime.Now - start < time)
+            {
+                var pk = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 1_000, token).ConfigureAwait(false);
+                if (pk == null || pk.Species < 1 || !pk.ChecksumValid || SearchUtil.HashByDetails(pk) == SearchUtil.HashByDetails(pkprev))
+                    continue;
 
+                // Save the new Pokémon for comparison next round.
+                pkprev = pk;
+
+                // Send results from separate thread; the bot doesn't need to wait for things to be calculated.
+                if (GiveawaySetting.GiveawayUpload)
+                {
+                    var subfolder = detail.Type.ToString().ToLower();
+                    UploadGiveawayPokemon(GiveawaySetting.GiveawayFolder, "upload", pk); // received
+                }
+
+                var la = new LegalityAnalysis(pk);
+                var verbose = la.Report(true);
+                Log($"Shown Pokémon is {(la.Valid ? "Valid" : "Invalid")}.");
+
+                detail.SendNotification(this, pk, verbose);
+                ctr++;
+            }
+
+            Log($"Ended Giveaway pool upload loop after processing {ctr} Pokémon");
+            await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
+            if (ctr == 0)
+                return PokeTradeResult.TrainerTooSlow;
+
+            Hub.Counts.AddCompletedDumps();
+            detail.Notifier.SendNotification(this, detail, $"Uploaded {ctr} Pokémon to the Giveaway Pool.");
+            detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
+            return PokeTradeResult.Success;
+        }
         private async Task<PokeTradeResult> PerformSurpriseTrade(SAV8SWSH sav, PK8 pkm, CancellationToken token)
         {
             // General Bot Strategy:

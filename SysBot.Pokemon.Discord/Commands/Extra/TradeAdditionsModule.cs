@@ -32,6 +32,16 @@ namespace SysBot.Pokemon.Discord
             });
             await ReplyAsync("These are the users who are currently waiting:", embed: embed.Build()).ConfigureAwait(false);
         }
+        [Command("giveawayupload")]
+        [Alias("gu", "gup")]
+        [Summary("Uploads the Pokémon you show via Link Trade to the Giveaway Pool.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayUploadAsync()
+        {
+            var sig = Context.User.GetFavor();
+            var code = Info.GetRandomTradeCode();
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.Dump, PokeTradeType.GiveawayUpload).ConfigureAwait(false);
+        }
 
         [Command("giveawaypool")]
         [Alias("gap")]
@@ -39,7 +49,7 @@ namespace SysBot.Pokemon.Discord
         [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
         public async Task DisplayGiveawayPoolCountAsync()
         {
-            var pool = Info.Hub.Ledy.Pool;
+            var pool = Info.Hub.Giveaway.Pool;
             if (pool.Count > 0)
             {
                 var lines = pool.Files.Select((z, i) => $"{i + 1}: {z.Key} = {(Species)z.Value.RequestInfo.Species}");
@@ -66,29 +76,50 @@ namespace SysBot.Pokemon.Discord
         public async Task GiveawayAsync([Summary("Giveaway Code")] int code, [Remainder] string content)
         {
             var pk = new PK8();
-            content = ReusableActions.StripCodeBlock(content);
-            pk.Nickname = content;
-            var pool = Info.Hub.Ledy.Pool;
-
-            if (pool.Count == 0)
+            var activePool = Info.Hub.Giveaway.Pool;
+            if (activePool.Count == 0)
             {
                 await ReplyAsync($"Giveaway pool is empty.").ConfigureAwait(false);
                 return;
             }
-            else if (pk.Nickname.ToLower() == "random") // Request a random giveaway prize.
-                pk = Info.Hub.Ledy.Pool.GetRandomSurprise();
-            else
+
+            content = ReusableActions.StripCodeBlock(content);
+
+            bool reqIsIndex = int.TryParse(content, out var poolIndex); // Check if the user provided an index rather than name
+            if (!reqIsIndex) // Not an integer so treat it as a name
             {
-                var trade = Info.Hub.Ledy.GetLedyTrade(pk);
-                if (trade != null)
-                    pk = trade.Receive;
+                var requestName = string.Concat(content.Select(char.ToLower));
+                if (requestName.ToLower() == "random")
+                {
+                    pk = activePool.GetRandomSurprise();
+                }
+                else if (activePool.Files.TryGetValue(requestName, out var match))
+                {
+                    pk = match.RequestInfo;
+                }
                 else
                 {
                     await ReplyAsync($"Requested Pokémon not available, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
                     return;
                 }
+            } 
+            else if (poolIndex <= activePool.Files.Count) // Request is an integer and will be treated as an index so check that it's within range
+            {
+                var trade = activePool.Files.ElementAt(poolIndex-1);
+                if (trade.Value != null)
+                    pk = trade.Value.RequestInfo;
+                else
+                {
+                    await ReplyAsync($"Provided index does not exist, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
+                    return;
+                }
             }
-
+            else
+            {
+                await ReplyAsync($"Provided index does not exist, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
+                return;
+            }
+            
             var sig = Context.User.GetFavor();
             await Context.AddToQueueAsync(code, Context.User.Username, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User).ConfigureAwait(false);
         }
