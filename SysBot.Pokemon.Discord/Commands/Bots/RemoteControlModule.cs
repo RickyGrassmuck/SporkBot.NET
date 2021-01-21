@@ -62,28 +62,26 @@ namespace SysBot.Pokemon.Discord
             var bot = SysCordInstance.Runner.GetBot(ip);
             if (bot == null)
             {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                await ReplyAsync($"No bot has that {(bot?.Bot.Config.ConnectionType == ConnectionType.WiFi ? "IP address" : "USB port index")} ({ip}).").ConfigureAwait(false);
                 return;
             }
 
             await SetStickAsyncImpl(s, x, y, ms, bot).ConfigureAwait(false);
         }
 
-        private async Task ClickAsyncImpl(SwitchButton button,BotSource<PokeBotState> bot)
+        private async Task ClickAsyncImpl(SwitchButton b, BotSource<PokeBotConfig> bot)
         {
-            if (!Enum.IsDefined(typeof(SwitchButton), button))
+            if (!Enum.IsDefined(typeof(SwitchButton), b))
             {
-                await ReplyAsync($"Unknown button value: {button}").ConfigureAwait(false);
+                await ReplyAsync($"Unknown button value: {b}").ConfigureAwait(false);
                 return;
             }
 
-            var b = bot.Bot;
-            var crlf = b is SwitchRoutineExecutor<PokeBotState> { UseCRLF: true };
-            await b.Connection.SendAsync(SwitchCommand.Click(button, crlf), CancellationToken.None).ConfigureAwait(false);
-            await ReplyAsync($"{b.Connection.Name} has performed: {button}").ConfigureAwait(false);
+            await bot.Bot.Connection.SendAsync(SwitchCommand.Click(b), bot.Bot.Config.ConnectionType, CancellationToken.None).ConfigureAwait(false);
+            await ReplyAsync($"{bot.Bot.Connection.Name} has performed: {b}").ConfigureAwait(false);
         }
 
-        private async Task SetStickAsyncImpl(SwitchStick s, short x, short y, ushort ms,BotSource<PokeBotState> bot)
+        private async Task SetStickAsyncImpl(SwitchStick s, short x, short y, ushort ms, BotSource<PokeBotConfig> bot)
         {
             if (!Enum.IsDefined(typeof(SwitchStick), s))
             {
@@ -91,13 +89,11 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            var b = bot.Bot;
-            var crlf = b is SwitchRoutineExecutor<PokeBotState> { UseCRLF: true };
-            await b.Connection.SendAsync(SwitchCommand.SetStick(s, x, y, crlf), CancellationToken.None).ConfigureAwait(false);
-            await ReplyAsync($"{b.Connection.Name} has performed: {s}").ConfigureAwait(false);
+            await bot.Bot.Connection.SendAsync(SwitchCommand.SetStick(s, x, y), bot.Bot.Config.ConnectionType, CancellationToken.None).ConfigureAwait(false);
+            await ReplyAsync($"{bot.Bot.Connection.Name} has performed: {s}").ConfigureAwait(false);
             await Task.Delay(ms).ConfigureAwait(false);
-            await b.Connection.SendAsync(SwitchCommand.ResetStick(s, crlf), CancellationToken.None).ConfigureAwait(false);
-            await ReplyAsync($"{b.Connection.Name} has reset the stick position.").ConfigureAwait(false);
+            await bot.Bot.Connection.SendAsync(SwitchCommand.ResetStick(s), bot.Bot.Config.ConnectionType, CancellationToken.None).ConfigureAwait(false);
+            await ReplyAsync($"{bot.Bot.Connection.Name} has reset the stick position.").ConfigureAwait(false);
         }
     }
 }

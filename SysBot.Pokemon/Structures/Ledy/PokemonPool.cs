@@ -69,10 +69,6 @@ namespace SysBot.Pokemon
             {
                 var data = File.ReadAllBytes(file);
                 var pkm = PKMConverter.GetPKMfromBytes(data);
-                if (pkm is null)
-                    continue;
-                if (pkm is not T)
-                    pkm = PKMConverter.ConvertToType(pkm, typeof(T), out _);
                 if (pkm is not T dest)
                     continue;
 
@@ -89,7 +85,7 @@ namespace SysBot.Pokemon
                 }
 
                 var la = new LegalityAnalysis(pk8);
-                if (!la.Valid)
+                if (!la.Valid && Settings.Legality.VerifyLegality)
                 {
                     var reason = la.Report();
                     LogUtil.LogInfo($"SKIPPED: Provided pk8 is not legal: {dest.FileName} -- {reason}", nameof(PokemonPool<T>));

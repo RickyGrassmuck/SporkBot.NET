@@ -15,7 +15,7 @@ namespace SysBot.Pokemon.WinForms
     {
         private static readonly string WorkingDirectory = Application.StartupPath;
         private static readonly string ConfigPath = Path.Combine(WorkingDirectory, "config.json");
-        private readonly List<PokeBotState> Bots = new();
+        private readonly List<PokeBotConfig> Bots = new();
         private readonly PokeBotRunner RunningEnvironment;
 
         public Main()
@@ -67,12 +67,12 @@ namespace SysBot.Pokemon.WinForms
             CB_Routine.DataSource = list;
             CB_Routine.SelectedIndex = 2; // default option
 
-            var protocols = (SwitchProtocol[])Enum.GetValues(typeof(SwitchProtocol));
-            var listP = protocols.Select(z => new ComboItem(z.ToString(), (int)z)).ToArray();
-            CB_Protocol.DisplayMember = nameof(ComboItem.Text);
-            CB_Protocol.ValueMember = nameof(ComboItem.Value);
-            CB_Protocol.DataSource = listP;
-            CB_Protocol.SelectedIndex = 0; // default option
+            var connectionTypes = (ConnectionType[])Enum.GetValues(typeof(ConnectionType));
+            var connectionList = connectionTypes.Select(z => new ComboItem(z.ToString(), (int)z)).ToArray();
+            CB_ConnectionType.DisplayMember = nameof(ComboItem.Text);
+            CB_ConnectionType.ValueMember = nameof(ComboItem.Value);
+            CB_ConnectionType.DataSource = connectionList;
+            CB_ConnectionType.SelectedIndex = 0; // WiFi as default
 
             LogUtil.Forwarders.Add(AppendLog);
         }
@@ -120,12 +120,7 @@ namespace SysBot.Pokemon.WinForms
         private void SaveCurrentConfig()
         {
             var cfg = GetCurrentConfiguration();
-            var lines = JsonConvert.SerializeObject(cfg, new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented,
-                DefaultValueHandling = DefaultValueHandling.Include,
-                NullValueHandling = NullValueHandling.Ignore
-            });
+            var lines = JsonConvert.SerializeObject(cfg);
             File.WriteAllText(ConfigPath, lines);
         }
 
@@ -182,18 +177,16 @@ namespace SysBot.Pokemon.WinForms
             var cfg = CreateNewBotConfig();
             if (!AddBot(cfg))
             {
-                WinFormsUtil.Alert("Unable to add bot; ensure details are valid and not duplicate with an already existing bot.");
+                WinFormsUtil.Alert(cfg.ConnectionType == ConnectionType.WiFi ? "Unable to add bot; ensure details are valid and not duplicate with an already existing bot."
+                    : "Unable to add bot; ensure details are valid, and that your Switch(es) are plugged in.");
                 return;
             }
             System.Media.SystemSounds.Asterisk.Play();
         }
 
-        private bool AddBot(PokeBotState cfg)
+        private bool AddBot(PokeBotConfig cfg)
         {
-            if (!cfg.IsValid())
-                return false;
-
-            if (Bots.Any(z => z.Connection.Equals(cfg.Connection)))
+            if ((!cfg.IsValidIP() && cfg.ConnectionType == ConnectionType.WiFi) || (!cfg.IsValidUSBIndex() && cfg.ConnectionType == ConnectionType.USB))
                 return false;
 
             var newbot = RunningEnvironment.CreateBotFromConfig(cfg);
@@ -212,7 +205,7 @@ namespace SysBot.Pokemon.WinForms
             return true;
         }
 
-        private void AddBotControl(PokeBotState cfg)
+        private void AddBotControl(PokeBotConfig cfg)
         {
             var row = new BotController { Width = FLP_Bots.Width };
             row.Initialize(RunningEnvironment, cfg);
@@ -220,43 +213,37 @@ namespace SysBot.Pokemon.WinForms
             FLP_Bots.SetFlowBreak(row, true);
             row.Click += (s, e) =>
             {
-                var details = cfg.Connection;
-                TB_IP.Text = details.IP;
-                NUD_Port.Value = details.Port;
-                CB_Protocol.SelectedIndex = (int)details.Protocol;
+                TB_IP.Text = cfg.IP;
+                NUD_Port.Value = cfg.Port;
                 CB_Routine.SelectedValue = (int)cfg.InitialRoutine;
+                CB_ConnectionType.SelectedValue = (int)cfg.ConnectionType;
             };
 
             row.Remove += (s, e) =>
             {
-                Bots.Remove(row.State);
-                RunningEnvironment.Remove(row.State, !RunningEnvironment.Hub.Config.SkipConsoleBotCreation);
+                Bots.Remove(row.Config);
+                RunningEnvironment.Remove(row.Config.IP, row.Config.UsbPortIndex, !RunningEnvironment.Hub.Config.SkipConsoleBotCreation);
                 FLP_Bots.Controls.Remove(row);
             };
         }
 
-        private PokeBotState CreateNewBotConfig()
+        private PokeBotConfig CreateNewBotConfig()
         {
-            var ip = TB_IP.Text;
-            var port = (int)NUD_Port.Value;
-            var cfg = BotConfigUtil.GetConfig<SwitchConnectionConfig>(ip, port);
-            cfg.Protocol = (SwitchProtocol)WinFormsUtil.GetIndex(CB_Protocol);
-
-            var pk = new PokeBotState {Connection = cfg};
             var type = (PokeRoutineType)WinFormsUtil.GetIndex(CB_Routine);
-            pk.Initialize(type);
-            return pk;
+            var ip = TB_IP.Text;
+            var usbPortIndex = TB_USB_Addr.Text;
+            var port = (int)NUD_Port.Value;
+            var connectionType = (ConnectionType)WinFormsUtil.GetIndex(CB_ConnectionType);
+
+            var cfg = SwitchBotConfig.GetConfig<PokeBotConfig>(ip, port, connectionType, usbPortIndex);
+            cfg.Initialize(type, connectionType);
+            return cfg;
         }
 
         private void FLP_Bots_Resize(object sender, EventArgs e)
         {
             foreach (var c in FLP_Bots.Controls.OfType<BotController>())
                 c.Width = FLP_Bots.Width;
-        }
-
-        private void CB_Protocol_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            TB_IP.Visible = CB_Protocol.SelectedIndex == 0;
         }
     }
 }

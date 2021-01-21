@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon
 {
-    public abstract class PokeBotRunner : BotRunner<PokeBotState>
+    public abstract class PokeBotRunner : BotRunner<PokeBotConfig>
     {
         public readonly PokeTradeHub<PK8> Hub;
 
@@ -16,19 +16,19 @@ namespace SysBot.Pokemon
 
         protected virtual void AddIntegrations() { }
 
-        public override void Add(RoutineExecutor<PokeBotState> bot)
+        public override void Add(SwitchRoutineExecutor<PokeBotConfig> bot)
         {
             base.Add(bot);
             if (bot is PokeTradeBot b)
                 Hub.Bots.Add(b);
         }
 
-        public override bool Remove(IConsoleBotConfig cfg, bool callStop)
+        public override bool Remove(string ip, string usbPortIndex, bool callStop)
         {
-            var bot = GetBot(cfg)?.Bot;
+            var bot = Bots.Find(z => z.Bot.Connection.IP == ip && z.Bot.Config.UsbPortIndex == usbPortIndex)?.Bot;
             if (bot is PokeTradeBot b)
                 Hub.Bots.Remove(b);
-            return base.Remove(cfg, callStop);
+            return base.Remove(ip, usbPortIndex, callStop);
         }
 
         public override void StartAll()
@@ -89,12 +89,14 @@ namespace SysBot.Pokemon
                 LogUtil.LogError("Nothing to distribute for Empty Trade Queues!", "Hub");
         }
 
-        public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
+        public PokeRoutineExecutor CreateBotFromConfig(PokeBotConfig cfg) => cfg.NextRoutineType switch
         {
             PokeRoutineType.FlexTrade or PokeRoutineType.Idle
                 or PokeRoutineType.SurpriseTrade
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
+                or PokeRoutineType.FixOT
+                or PokeRoutineType.TradeCord
                 or PokeRoutineType.Dump
                 or PokeRoutineType.SeedCheck
                 => new PokeTradeBot(Hub, cfg),

@@ -14,7 +14,7 @@ namespace SysBot.Pokemon
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredIVs;
 
-        public FossilBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public FossilBot(PokeBotConfig cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Counts = Hub.Counts;
@@ -29,7 +29,7 @@ namespace SysBot.Pokemon
 
         private static readonly PK8 Blank = new();
 
-        public override async Task MainLoop(CancellationToken token)
+        protected override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
