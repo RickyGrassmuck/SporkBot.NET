@@ -30,7 +30,7 @@ namespace SysBot.Pokemon
         /// </summary>
         public int FailedBarrier { get; private set; }
 
-        public PokeTradeBot(PokeTradeHub<PK8> hub, PokeBotConfig cfg) : base(cfg)
+        public PokeTradeBot(PokeTradeHub<PK8> hub, PokeBotState cfg) : base(cfg)
         {
             Hub = hub;
             DumpSetting = hub.Config.Folder;
@@ -39,7 +39,7 @@ namespace SysBot.Pokemon
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
 
-        protected override async Task MainLoop(CancellationToken token)
+        public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             var sav = await IdentifyTrainer(token).ConfigureAwait(false);
@@ -250,7 +250,7 @@ namespace SysBot.Pokemon
 
             // Wait for User Input...
             var pk = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 25_000, 1_000, token).ConfigureAwait(false);
-            var oldEC = await Connection.ReadBytesAsync(LinkTradePartnerPokemonOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
+            var oldEC = await Connection.ReadBytesAsync(LinkTradePartnerPokemonOffset, 4, token).ConfigureAwait(false);
             if (pk == null)
             {
                 await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
@@ -299,7 +299,7 @@ namespace SysBot.Pokemon
                 }
                 else if (!laInit.Valid)
                 {
-                    Log($"FixOT request has detected an invalid Pokémon: {(Species)clone.Species}");
+                    Log($"FixOT request has detected an invalid Pokémon from {poke.Trainer.TrainerName}: {(Species)clone.Species}");
                     if (DumpSetting.Dump)
                         DumpPokemon(DumpSetting.DumpFolder, "hacked", clone);
 
@@ -318,7 +318,7 @@ namespace SysBot.Pokemon
 
                 clone = (PK8)TradeExtensions.TrashBytes(clone);
                 var la = new LegalityAnalysis(clone);
-                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                if (!la.Valid)
                 {
                     var report = la.Report();
                     Log(report);
@@ -352,9 +352,9 @@ namespace SysBot.Pokemon
                     poke.SendNotification(this, clone, "Here's what you showed me!");
 
                 var la = new LegalityAnalysis(clone);
-                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                if (!la.Valid)
                 {
-                    Log($"Clone request has detected an invalid Pokémon: {(Species)clone.Species}");
+                    Log($"Clone request (from {poke.Trainer.TrainerName}) has detected an invalid Pokémon: {(Species)clone.Species}.");
                     if (DumpSetting.Dump)
                         DumpPokemon(DumpSetting.DumpFolder, "hacked", clone);
 
@@ -579,8 +579,8 @@ namespace SysBot.Pokemon
             Log("Waiting for Surprise Trade Partner...");
 
             // Wait for an offer...
-            var oldEC = await Connection.ReadBytesAsync(SurpriseTradeSearchOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
-            var partnerFound = Hub.Config.Trade.SpinTrade && Config.ConnectionType == ConnectionType.USB ? await SpinTrade(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false) : await ReadUntilChanged(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false);
+            var oldEC = await Connection.ReadBytesAsync(SurpriseTradeSearchOffset, 4, token).ConfigureAwait(false);
+            var partnerFound = Hub.Config.Trade.SpinTrade && Config.Connection.Protocol == SwitchProtocol.USB ? await SpinTrade(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false) : await ReadUntilChanged(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
                 return PokeTradeResult.Aborted;
@@ -602,8 +602,8 @@ namespace SysBot.Pokemon
             // Clear out the received trade data; we want to skip the trade animation.
             // The box slot locks have been removed prior to searching.
 
-            await Connection.WriteBytesAsync(BitConverter.GetBytes(SurpriseTradeSearch_Empty), SurpriseTradeSearchOffset, Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.WriteBytesAsync(PokeTradeBotUtil.EMPTY_SLOT, SurpriseTradePartnerPokemonOffset, Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.WriteBytesAsync(BitConverter.GetBytes(SurpriseTradeSearch_Empty), SurpriseTradeSearchOffset, token).ConfigureAwait(false);
+            await Connection.WriteBytesAsync(PokeTradeBotUtil.EMPTY_SLOT, SurpriseTradePartnerPokemonOffset, token).ConfigureAwait(false);
 
             // Let the game recognize our modifications before finishing this loop.
             await Task.Delay(5_000, token).ConfigureAwait(false);
@@ -611,14 +611,14 @@ namespace SysBot.Pokemon
             // Clear the Surprise Trade slot locks! We'll skip the trade animation and reuse the slot on later loops.
             // Write 8 bytes of FF to set both Int32's to -1. Regular locks are [Box32][Slot32]
 
-            await Connection.WriteBytesAsync(BitConverter.GetBytes(ulong.MaxValue), SurpriseTradeLockBox, Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.WriteBytesAsync(BitConverter.GetBytes(ulong.MaxValue), SurpriseTradeLockBox, token).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
                 return PokeTradeResult.Aborted;
 
             if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
             {
-                if (Hub.Config.Trade.SpinTrade && Config.ConnectionType == ConnectionType.USB)
+                if (Hub.Config.Trade.SpinTrade && Config.Connection.Protocol == SwitchProtocol.USB)
                     await SpinCorrection(token).ConfigureAwait(false);
                 Log("Trade complete!");
             }
@@ -732,8 +732,8 @@ namespace SysBot.Pokemon
 
         private async Task<bool> WaitForPokemonChanged(uint offset, int waitms, int waitInterval, CancellationToken token)
         {
-            var oldEC = await Connection.ReadBytesAsync(offset, 4, Config.ConnectionType, token).ConfigureAwait(false);
-            return Hub.Config.Trade.SpinTrade && Config.ConnectionType == ConnectionType.USB ? await SpinTrade(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false) : await ReadUntilChanged(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false);
+            var oldEC = await Connection.ReadBytesAsync(offset, 4, token).ConfigureAwait(false);
+            return Hub.Config.Trade.SpinTrade && Config.Connection.Protocol == SwitchProtocol.USB ? await SpinTrade(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false) : await ReadUntilChanged(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false);
         }
     }
 }

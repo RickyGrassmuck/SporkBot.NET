@@ -172,13 +172,20 @@ namespace SysBot.Pokemon.Discord
 
             var rng = new Random();
             var content = File.ReadAllText($"TradeCord\\{user}.txt").Split(',').ToList();
-            var speciesZukan = Zukan8.GetRawIndexes(PersonalTable.SWSH, 2);
-            var speciesRng = speciesZukan[rng.Next(speciesZukan.Count)].Species;
+            bool isPresent = false;
+            int speciesRng = 0;
+            while (!isPresent)
+            {
+                speciesRng = rng.Next(1, 899);
+                var tempPkm = TradeCordPKM(speciesRng);
+                isPresent = tempPkm.GenNumber == 8 && !tempPkm.IsNicknamed;             
+            }
+            
             var catchRng = rng.Next(101);
             var eggRng = rng.Next(101);
             PKM eggPkm = new PK8();
-            int form1 = 0, form2 = 0, evo1 = 0, evo2 = 0;
-            bool egg = content[1] != "0-0" && content[2] != "0-0" && CanGenerateEgg(content, out _, out _, out form1, out form2, out evo1, out evo2) && eggRng > 25;
+            int form1 = 0, form2 = 0, evo1 = 0, evo2 = 0, spID1 = 0, spID2 = 0;
+            bool egg = content[1] != "0-0" && content[2] != "0-0" && CanGenerateEgg(content, out _, out _, out form1, out form2, out evo1, out spID1, out evo2, out spID2) && eggRng > 25;
             List<string> trainerInfo = new();
 
             for (int i = 3; i < 8; i++)
@@ -189,9 +196,9 @@ namespace SysBot.Pokemon.Discord
 
             if (egg)
             {
-                eggPkm = TradeExtensions.EggRngRoutine(content, trainerInfo, form1, form2, evo1, evo2);
+                eggPkm = TradeExtensions.EggRngRoutine(content, trainerInfo, form1, form2, evo1, spID1, evo2, spID2);
                 var laEgg = new LegalityAnalysis(eggPkm);
-                var invalidEgg = !(eggPkm is PK8) || (!laEgg.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality);
+                var invalidEgg = !(eggPkm is PK8) || !laEgg.Valid || !eggPkm.IsEgg;
                 if (invalidEgg)
                 {
                     await Context.Channel.SendPKMAsync(eggPkm, $"Something went wrong!\n{ReusableActions.GetFormattedShowdownText(eggPkm)}").ConfigureAwait(false);
@@ -241,7 +248,7 @@ namespace SysBot.Pokemon.Discord
                     CommonEdits.SetShiny(pkm, Shiny.Random);
 
                 var la = new LegalityAnalysis(pkm);
-                var invalid = !(pkm is PK8) || (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality);
+                var invalid = !(pkm is PK8) || !la.Valid || speciesRng != pkm.Species;
                 if (invalid)
                 {
                     await Context.Channel.SendPKMAsync(pkm, $"Something went wrong!\n{ReusableActions.GetFormattedShowdownText(pkm)}").ConfigureAwait(false);
@@ -630,7 +637,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            bool canGenerateEgg = CanGenerateEgg(content, out string[] split1, out string[] split2, out int form1, out int form2, out _, out _);
+            bool canGenerateEgg = CanGenerateEgg(content, out string[] split1, out string[] split2, out int form1, out int form2, out _, out _, out _, out _);
             var shiny1 = split1.Contains("★");
             var shiny2 = split2.Contains("★");
             var species1 = content[1] != "0-0" ? split1[shiny1 ? 2 : 1].Split('-')[0] : "";
@@ -1114,17 +1121,17 @@ namespace SysBot.Pokemon.Discord
             }
         }
 
-        private bool CanGenerateEgg(List<string> content, out string[] split1, out string[] split2, out int form1, out int form2, out int evo1, out int evo2)
+        private bool CanGenerateEgg(List<string> content, out string[] split1, out string[] split2, out int form1, out int form2, out int evo1, out int speciesID1, out int evo2, out int speciesID2)
         {
             split1 = content[1].Split('_');
             split2 = content[2].Split('_');
             form1 = form2 = 0;
-            evo1 = evo2 = 0;
+            evo1 = evo2 = speciesID1 = speciesID2 = 0;
 
             if (content[1] != "0-0")
             {
                 form1 = int.Parse(content[1].Split('-')[1].Split('_')[0]);
-                int speciesID1 = int.Parse(content[1].Split('-')[0].Split('_').LastOrDefault());
+                speciesID1 = int.Parse(content[1].Split('-')[0].Split('_').LastOrDefault());
                 var pkm1 = AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(SpeciesName.GetSpeciesNameGeneration(speciesID1, 2, 8))), out _);
                 evo1 = EvolutionTree.GetEvolutionTree(8).GetValidPreEvolutions(pkm1, 100).LastOrDefault().Species;
             }
@@ -1132,7 +1139,7 @@ namespace SysBot.Pokemon.Discord
             if (content[2] != "0-0")
             {
                 form2 = int.Parse(content[2].Split('-')[1].Split('_')[0]);
-                int speciesID2 = int.Parse(content[2].Split('-')[0].Split('_').LastOrDefault());
+                speciesID2 = int.Parse(content[2].Split('-')[0].Split('_').LastOrDefault());
                 var pkm2 = AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(SpeciesName.GetSpeciesNameGeneration(speciesID2, 2, 8))), out _);
                 evo2 = EvolutionTree.GetEvolutionTree(8).GetValidPreEvolutions(pkm2, 100).LastOrDefault().Species;
             }
@@ -1192,7 +1199,7 @@ namespace SysBot.Pokemon.Discord
             var formEdgeCaseRng = rng.Next(2);
             string[] poipoleRng = { "Poke", "Beast", "Cherish" };
             var eventRng = rng.Next(101);
-            string ballRng = (eventRng > 75 && TradeExtensions.Cherish.Contains(speciesRng)) || (speciesRng == (int)Species.Melmetal && gmaxRng > 60) || TradeExtensions.CherishOnly.Contains(speciesRng) || (TradeExtensions.CherishShinyOnly.Contains(speciesRng) && shinyRng > 95) ? "\nBall: Cherish" : "\nBall: Poke";
+            string ballRng = (eventRng > 75 && TradeExtensions.Cherish.Contains(speciesRng)) || (speciesRng == (int)Species.Melmetal && gmaxRng > 60) || TradeExtensions.CherishOnly.Contains(speciesRng) || TradeExtensions.CanBeShinyCherish.Contains(speciesRng) || (TradeExtensions.CherishShinyOnly.Contains(speciesRng) && shinyRng > 95) ? "\nBall: Cherish" : "\nBall: Poke";
 
             if (ballRng.Contains("Cherish"))
             {
@@ -1406,5 +1413,7 @@ namespace SysBot.Pokemon.Discord
             content[0] = catchID.ToString();
             File.WriteAllText($"TradeCord\\{user}.txt", string.Join(",", content));
         }
+
+        private PKM TradeCordPKM(int species) => AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(SpeciesName.GetSpeciesNameGeneration(species, 2, 8))), out _);
     }
 }

@@ -14,7 +14,7 @@ namespace SysBot.Pokemon
         private readonly BotCompleteCounts Counts;
         private readonly RaidSettings Settings;
 
-        public RaidBot(PokeBotConfig cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public RaidBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Settings = hub.Config.Raid;
@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
         private DateTime toggleTimeSync;
         private bool toggle = false;
 
-        protected override async Task MainLoop(CancellationToken token)
+        public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             _ = await IdentifyTrainer(token).ConfigureAwait(false);
@@ -107,7 +107,7 @@ namespace SysBot.Pokemon
 
             if (raidBossSpecies == -1)
             {
-                var data = await Connection.ReadBytesAsync(RaidBossOffset, 2, Config.ConnectionType, token).ConfigureAwait(false);
+                var data = await Connection.ReadBytesAsync(RaidBossOffset, 2, token).ConfigureAwait(false);
                 raidBossSpecies = BitConverter.ToUInt16(data, 0);
             }
             Log($"Initializing raid for {(Species)raidBossSpecies}.");
@@ -150,7 +150,7 @@ namespace SysBot.Pokemon
                 await Task.Delay(1_000, token).ConfigureAwait(false);
                 timetowait -= 1_000;
 
-                if ((PlayerReady[1] || PlayerReady[2] || PlayerReady[3]) && Config.ConnectionType == ConnectionType.USB && Settings.AirplaneQuitout) // Need at least one player to be ready
+                if ((PlayerReady[1] || PlayerReady[2] || PlayerReady[3]) && Config.Connection.Protocol == SwitchProtocol.USB && Settings.AirplaneQuitout) // Need at least one player to be ready
                     airplaneUsable = true;
             }
 
@@ -204,7 +204,7 @@ namespace SysBot.Pokemon
             var ofs = RaidP0PokemonOffset + (0x30 * player);
 
             // Check if the player has locked in.
-            var data = await Connection.ReadBytesAsync(ofs + RaidLockedInIncr, 1, Config.ConnectionType, token).ConfigureAwait(false);
+            var data = await Connection.ReadBytesAsync(ofs + RaidLockedInIncr, 1, token).ConfigureAwait(false);
             if (data[0] == 0)
                 return false;
 
@@ -213,16 +213,16 @@ namespace SysBot.Pokemon
             // If we get to here, they're locked in and should have a Pokémon selected.
             if (Hub.Config.Raid.EchoPartyReady)
             {
-                data = await Connection.ReadBytesAsync(ofs, 2, Config.ConnectionType, token).ConfigureAwait(false);
+                data = await Connection.ReadBytesAsync(ofs, 2, token).ConfigureAwait(false);
                 var dexno = BitConverter.ToUInt16(data, 0);
 
-                data = await Connection.ReadBytesAsync(ofs + RaidAltFormInc, 1, Config.ConnectionType, token).ConfigureAwait(false);
+                data = await Connection.ReadBytesAsync(ofs + RaidAltFormInc, 1, token).ConfigureAwait(false);
                 var altformstr = data[0] == 0 ? "" : "-" + data[0];
 
-                data = await Connection.ReadBytesAsync(ofs + RaidShinyIncr, 1, Config.ConnectionType, token).ConfigureAwait(false);
+                data = await Connection.ReadBytesAsync(ofs + RaidShinyIncr, 1, token).ConfigureAwait(false);
                 var shiny = data[0] == 1 ? "★" : "";
 
-                data = await Connection.ReadBytesAsync(ofs + RaidGenderIncr, 1, Config.ConnectionType, token).ConfigureAwait(false);
+                data = await Connection.ReadBytesAsync(ofs + RaidGenderIncr, 1, token).ConfigureAwait(false);
                 var gender = data[0] == 0 ? " (M)" : (data[0] == 1 ? " (F)" : "");
 
                 EchoUtil.Echo($"Player {player + 1} is ready with {shiny}{(Species)dexno}{altformstr}{gender}!");
@@ -401,11 +401,11 @@ namespace SysBot.Pokemon
                         await Click(A, 1_000 + Hub.Config.Timings.ExtraTimeAButtonClickAR, token).ConfigureAwait(false);
                     await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadLobbyAR, token).ConfigureAwait(false);
 
-                    var data = await Connection.ReadBytesAsync(RaidBossOffset, 2, Config.ConnectionType, token).ConfigureAwait(false);
+                    var data = await Connection.ReadBytesAsync(RaidBossOffset, 2, token).ConfigureAwait(false);
                     raidBossSpecies = BitConverter.ToUInt16(data, 0);
                     EchoUtil.Echo($"Rolling complete. Raid for {(Species)raidBossSpecies} will be going up shortly!");
 
-                    if ((Species)raidBossSpecies == Settings.AutoRollSpecies && Config.ConnectionType == ConnectionType.USB && Settings.AirplaneQuitout)
+                    if ((Species)raidBossSpecies == Settings.AutoRollSpecies && Config.Connection.Protocol == SwitchProtocol.USB && Settings.AirplaneQuitout)
                     {
                         softLock = true;
                         EchoUtil.Echo($"Soft locking on {(Species)raidBossSpecies}.");
@@ -429,21 +429,21 @@ namespace SysBot.Pokemon
             if (!toggle)
                 await Click(HOME, 2_000, token).ConfigureAwait(false);
 
-            await Click(DDOWN, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+            await Click(DDOWN, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
             for (int i = 0; i < 5; i++)
-                await Click(DRIGHT, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+                await Click(DRIGHT, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
             await Click(A, 1_000, token).ConfigureAwait(false); // Enter settings
             for (int i = 0; i < 14; i++)
-                await Click(DDOWN, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+                await Click(DDOWN, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
             await Click(A, 1_250, token).ConfigureAwait(false); // Scroll to system settings
             for (int i = 0; i < 4; i++)
-                await Click(DDOWN, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+                await Click(DDOWN, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
             await Click(A, 1_250, token).ConfigureAwait(false); // Scroll to date/time settings
 
             if (!toggle)
             {
-                await Click(DDOWN, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
-                await Click(DDOWN, Config.ConnectionType == ConnectionType.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+                await Click(DDOWN, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
+                await Click(DDOWN, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_250 : 0, token).ConfigureAwait(false);
                 await Click(A, 0_750, token).ConfigureAwait(false); // Scroll to date/time screen
             }
             else if (toggle)
@@ -460,10 +460,10 @@ namespace SysBot.Pokemon
         private async Task TimeSkip(CancellationToken token)
         {
             for (int i = 0; i < LangClicksYear; i++)
-                await Click(DRIGHT, Config.ConnectionType == ConnectionType.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
-            await Click(DUP, Config.ConnectionType == ConnectionType.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
+                await Click(DRIGHT, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
+            await Click(DUP, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
             for (int i = 0; i < LangClicksConfirm; i++)
-                await Click(DRIGHT, Config.ConnectionType == ConnectionType.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
+                await Click(DRIGHT, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
             await Click(A, 0_750, token).ConfigureAwait(false);
             await Click(HOME, 1_000, token).ConfigureAwait(false);
             await Click(HOME, 2_000 + Hub.Config.Timings.ExtraTimeDaySkipLobbyReturnAR, token).ConfigureAwait(false);
@@ -474,11 +474,11 @@ namespace SysBot.Pokemon
         {
             Log("Resetting system date...");
             for (int i = 0; i < LangClicksYear; i++)
-                await Click(DRIGHT, Config.ConnectionType == ConnectionType.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
+                await Click(DRIGHT, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
             await SetStick(SwitchStick.LEFT, 0, -30000, 7_000, token).ConfigureAwait(false);
             await SetStick(SwitchStick.LEFT, 0, 0, 0_250, token).ConfigureAwait(false);
             for (int i = 0; i < LangClicksConfirm; i++)
-                await Click(DRIGHT, Config.ConnectionType == ConnectionType.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
+                await Click(DRIGHT, Config.Connection.Protocol == SwitchProtocol.WiFi ? 0_150 : 0, token).ConfigureAwait(false);
             await Click(A, 0_750, token).ConfigureAwait(false);
             await Click(HOME, 1_000, token).ConfigureAwait(false);
             await Click(HOME, 2_000, token).ConfigureAwait(false); // Roll back some years, go back into game
