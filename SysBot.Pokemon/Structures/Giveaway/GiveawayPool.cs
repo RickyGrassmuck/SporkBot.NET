@@ -3,7 +3,7 @@ using PKHeX.Core;
 using SysBot.Base;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using Newtonsoft.Json;
 
 namespace SysBot.Pokemon
 {
@@ -51,7 +51,7 @@ namespace SysBot.Pokemon
             return LoadFolder(Path.Combine(Settings.Giveaway.GiveawayFolder));
         }
 
-        public readonly Dictionary<string, GiveawayRequest<T>> Files = new();
+        public Dictionary<string, GiveawayRequest<T>> Files = new();
 
         public bool LoadFolder(string path)
         {
