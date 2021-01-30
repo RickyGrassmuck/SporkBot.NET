@@ -16,7 +16,7 @@ namespace SysBot.Pokemon
         private readonly int[] DesiredIVs;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
-        public EncounterBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public EncounterBot(PokeBotConfig cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Counts = Hub.Counts;
@@ -28,7 +28,7 @@ namespace SysBot.Pokemon
         private int catchCount;
         private byte[] pouchData = { 0 };
 
-        public override async Task MainLoop(CancellationToken token)
+        protected override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
@@ -262,7 +262,7 @@ namespace SysBot.Pokemon
                 if (Hub.Config.StopConditions.InjectPokeBalls)
                 {
                     Log("Restoring original pouch data.");
-                    await Connection.WriteBytesAsync(pouchData, PokeBallOffset, token).ConfigureAwait(false);
+                    await Connection.WriteBytesAsync(pouchData, PokeBallOffset, Config.ConnectionType, token).ConfigureAwait(false);
                     await Task.Delay(0_500, token).ConfigureAwait(false);
                 }
                 else
@@ -297,7 +297,7 @@ namespace SysBot.Pokemon
             if (Hub.Config.StopConditions.CatchEncounter)
             {
                 Log("Checking Poké Ball count...");
-                pouchData = await Connection.ReadBytesAsync(PokeBallOffset, 116, token).ConfigureAwait(false);
+                pouchData = await Connection.ReadBytesAsync(PokeBallOffset, 116, Config.ConnectionType, token).ConfigureAwait(false);
                 var counts = EncounterCount.GetBallCounts(pouchData);
                 catchCount = counts.PossibleCatches(Ball.Master);
 

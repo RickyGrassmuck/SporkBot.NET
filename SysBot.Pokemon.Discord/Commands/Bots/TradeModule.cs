@@ -49,6 +49,7 @@ namespace SysBot.Pokemon.Discord
             content = ReusableActions.StripCodeBlock(content);
             var set = new ShowdownSet(content);
             var template = AutoLegalityWrapper.GetTemplate(set);
+
             if (set.InvalidLines.Count != 0)
             {
                 var msg = $"Unable to parse Showdown Set:\n{string.Join("\n", set.InvalidLines)}";
@@ -57,7 +58,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             var sav = AutoLegalityWrapper.GetTrainerInfo(gen);
-            var pkm = sav.GetLegal(template, out var result);
+            var pkm = sav.GetLegal(template, out _);
 
             if (Info.Hub.Config.Trade.DittoTrade && pkm.Species == 132)
                 TradeExtensions.DittoTrade(pkm);
@@ -67,15 +68,17 @@ namespace SysBot.Pokemon.Discord
 
             var la = new LegalityAnalysis(pkm);
             var spec = GameInfo.Strings.Species[template.Species];
-            pkm = PKMConverter.ConvertToType(pkm, typeof(PK8), out _) ?? pkm;
-            if (Info.Hub.Config.Trade.Memes && await TrollAsync(pkm is not PK8 || !la.Valid, template).ConfigureAwait(false))
-            	return;
-            else if (pkm is not PK8 || !la.Valid)
+            var invalid = !(pkm is PK8) || (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality);
+            if (invalid && !Info.Hub.Config.Trade.Memes)
             {
-                var reason = result == "Timeout" ? "That set took too long to generate." : "I wasn't able to create something from that.";
-                var imsg = $"Oops! {reason} Here's my best attempt for that {spec}!";
+                var imsg = $"Oops! I wasn't able to create something from that. Here's my best attempt for that {spec}!";
                 await Context.Channel.SendPKMAsync(pkm, imsg).ConfigureAwait(false);
                 return;
+            }
+            else if (Info.Hub.Config.Trade.Memes)
+            {
+                if (await TrollAsync(invalid, template).ConfigureAwait(false))
+                    return;
             }
 
             pkm.ResetPartyStats();
@@ -146,26 +149,13 @@ namespace SysBot.Pokemon.Discord
             }
 
             var att = await NetUtil.DownloadPKMAsync(attachment).ConfigureAwait(false);
-            var pk8 = GetRequest(att);
-            if (pk8 == null)
+            if (!att.Success || att.Data is not PK8 pk8)
             {
-                await ReplyAsync("Attachment provided is not compatible with this module!").ConfigureAwait(false);
+                await ReplyAsync("No PK8 attachment provided!").ConfigureAwait(false);
                 return;
             }
 
             await AddTradeToQueueAsync(code, usr.Username, pk8, sig, usr).ConfigureAwait(false);
-        }
-
-        private static PK8? GetRequest(Download<PKM> dl)
-        {
-            if (!dl.Success)
-                return null;
-            return dl.Data switch
-            {
-                null => null,
-                PK8 pk8 => pk8,
-                _ => PKMConverter.ConvertToType(dl.Data, typeof(PK8), out _) as PK8
-            };
         }
 
         private async Task AddTradeToQueueAsync(int code, string trainerName, PK8 pk8, RequestSignificance sig, SocketUser usr)
@@ -178,7 +168,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             var la = new LegalityAnalysis(pk8);
-            if (!la.Valid)
+            if (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality)
             {
                 await ReplyAsync("PK8 attachment is not legal, and cannot be traded!").ConfigureAwait(false);
                 return;

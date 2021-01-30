@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using SysBot.Base;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,18 +29,18 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetDetailedSummary(PokeRoutineExecutor z)
         {
-            return $"- {z.Connection.Name} | {z.Connection.Label} - {z.Config.CurrentRoutineType} ~ {z.LastTime:hh:mm:ss} | {z.LastLogged}";
+            return $"- {(z.Config.ConnectionType == ConnectionType.USB ? "USB" + z.Config.UsbPortIndex : z.Connection.IP)} | {z.Connection.Name} - {z.Config.CurrentRoutineType} ~ {z.LastTime:hh:mm:ss} | {z.LastLogged}";
         }
 
         [Command("botStart")]
-        [Summary("Starts a bot by IP address/port.")]
+        [Summary("Starts a bot by IP address.")]
         [RequireSudo]
         public async Task StartBotAsync(string ip)
         {
             var bot = SysCordInstance.Runner.GetBot(ip);
             if (bot == null)
             {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                await ReplyAsync($"{(bot?.Bot.Config.ConnectionType == ConnectionType.WiFi ? $"No bot has that IP address ({ip})." : $"No bot has that USB port index ({ip}).")}").ConfigureAwait(false);
                 return;
             }
 
@@ -48,14 +49,14 @@ namespace SysBot.Pokemon.Discord
         }
 
         [Command("botStop")]
-        [Summary("Stops a bot by IP address/port.")]
+        [Summary("Stops a bot by IP address.")]
         [RequireSudo]
         public async Task StopBotAsync(string ip)
         {
             var bot = SysCordInstance.Runner.GetBot(ip);
             if (bot == null)
             {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                await ReplyAsync($"{(bot?.Bot.Config.ConnectionType == ConnectionType.WiFi ? $"No bot has that IP address ({ip})." : $"No bot has that USB port index ({ip}).")}").ConfigureAwait(false);
                 return;
             }
 
@@ -65,14 +66,14 @@ namespace SysBot.Pokemon.Discord
 
         [Command("botIdle")]
         [Alias("botPause")]
-        [Summary("Commands a bot to Idle by IP address/port.")]
+        [Summary("Commands a bot to Idle by IP address.")]
         [RequireSudo]
         public async Task IdleBotAsync(string ip)
         {
             var bot = SysCordInstance.Runner.GetBot(ip);
             if (bot == null)
             {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                await ReplyAsync($"{(bot?.Bot.Config.ConnectionType == ConnectionType.WiFi ? $"No bot has that IP address ({ip})." : $"No bot has that USB port index ({ip}).")}").ConfigureAwait(false);
                 return;
             }
 
@@ -88,11 +89,11 @@ namespace SysBot.Pokemon.Discord
             var bot = SysCordInstance.Runner.GetBot(ip);
             if (bot == null)
             {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                await ReplyAsync($"{(bot?.Bot.Config.ConnectionType == ConnectionType.WiFi ? $"No bot has that IP address ({ip})." : $"No bot has that USB port index ({ip}).")}").ConfigureAwait(false);
                 return;
             }
 
-            bot.Bot.Config.Initialize(task);
+            bot.Bot.Config.Initialize(task, bot.Bot.Config.ConnectionType);
             await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Name}) has been commanded to do {task} as its next task.").ConfigureAwait(false);
         }
 
@@ -105,16 +106,21 @@ namespace SysBot.Pokemon.Discord
             foreach (var ip in ips)
             {
                 var bot = SysCordInstance.Runner.GetBot(ip);
+                if (bot?.Bot.Config.ConnectionType == ConnectionType.USB)
+                {
+                    await ReplyAsync($"This bot could not be restarted because it's running in USB mode.").ConfigureAwait(false);
+                    return;
+                }
+
                 if (bot == null)
                 {
                     await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
                     return;
                 }
 
-                var c = bot.Bot.Connection;
-                c.Reset();
+                bot.Bot.Connection.Reset(ip);
                 bot.Start();
-                await Context.Channel.EchoAndReply($"The bot at {ip} ({c.Name}) has been commanded to start.").ConfigureAwait(false);
+                await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Name}) has been commanded to start.").ConfigureAwait(false);
             }
         }
     }
