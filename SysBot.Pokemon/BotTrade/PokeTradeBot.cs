@@ -54,7 +54,6 @@ namespace SysBot.Pokemon
                 var task = Config.CurrentRoutineType switch
                 {
                     PokeRoutineType.Idle => DoNothing(token),
-                    PokeRoutineType.SurpriseTrade => DoSurpriseTrades(sav, token),
                     _ => DoTrades(sav, token),
                 };
                 await task.ConfigureAwait(false);
@@ -127,17 +126,6 @@ namespace SysBot.Pokemon
             UpdateBarrier(false);
         }
 
-        private async Task DoSurpriseTrades(SAV8SWSH sav, CancellationToken token)
-        {
-            await SetCurrentBox(0, token).ConfigureAwait(false);
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SurpriseTrade)
-            {
-                var pkm = Hub.Ledy.Pool.GetRandomSurprise();
-                await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
-                var _ = await PerformSurpriseTrade(sav, pkm, token).ConfigureAwait(false);
-            }
-        }
-
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8SWSH sav, PokeTradeDetail<PK8> poke, CancellationToken token)
         {
             // Update Barrier Settings
@@ -149,6 +137,7 @@ namespace SysBot.Pokemon
                 await Unban(token).ConfigureAwait(false);
 
             var pkm = poke.TradeData;
+
             if (pkm.Species != 0)
                 await SetBoxPokemon(pkm, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
 
@@ -515,7 +504,21 @@ namespace SysBot.Pokemon
             var time = TimeSpan.FromSeconds(Hub.Config.Trade.MaxDumpTradeTime);
             var start = DateTime.Now;
             var pkprev = new PK8();
-            while (ctr < Hub.Config.Trade.MaxDumpsPerTrade && DateTime.Now - start < time)
+            var uploadEntryName = detail.TradeData.OT_Name;
+            var uploadEntryStatusID = detail.TradeData.Status_Condition;
+            string uploadEntryStatus;
+            if (uploadEntryStatusID == 0)
+            {
+                uploadEntryStatus = "active";
+            }
+            else
+            {
+                uploadEntryStatus = "inactive";
+            }
+            var uploadEntryTag = detail.TradeData.HT_Name;
+            var uploadEntryTrainer = detail.Trainer.TrainerName;
+
+            while (ctr < 1 && DateTime.Now - start < time)
             {
                 var pk = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 1_000, token).ConfigureAwait(false);
                 if (pk == null || pk.Species < 1 || !pk.ChecksumValid || SearchUtil.HashByDetails(pk) == SearchUtil.HashByDetails(pkprev))
@@ -523,157 +526,29 @@ namespace SysBot.Pokemon
 
                 // Save the new Pokémon for comparison next round.
                 pkprev = pk;
+                GiveawayPoolEntry newUpload = GiveawayPoolEntry.CreateUploadEntry(uploadEntryName, "", pk, uploadEntryStatus, uploadEntryTag, uploadEntryTrainer);
 
-                // Send results from separate thread; the bot doesn't need to wait for things to be calculated.
                 if (GiveawaySetting.GiveawayUpload)
-                {
-                    var subfolder = detail.Type.ToString().ToLower();
-                    UploadGiveawayPokemon(GiveawaySetting.GiveawayFolder, "upload", pk); // received
-                }
+                    Hub.GiveawayPoolDatabase.NewEntry(newUpload);
 
                 var la = new LegalityAnalysis(pk);
                 var verbose = la.Report(true);
                 Log($"Shown Pokémon is {(la.Valid ? "Valid" : "Invalid")}.");
-
                 detail.SendNotification(this, pk, verbose);
+                if (Hub.Config.Discord.ReturnPK8s)
+                    detail.SendNotification(this, pk, "Here's what you showed me!");
                 ctr++;
+
             }
 
-            Log($"Ended Giveaway pool upload loop after processing {ctr} Pokémon");
+            Log($"Ended Giveaway pool upload");
             await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
             if (ctr == 0)
                 return PokeTradeResult.TrainerTooSlow;
 
-            Hub.Counts.AddCompletedDumps();
-            detail.Notifier.SendNotification(this, detail, $"Uploaded {ctr} Pokémon to the Giveaway Pool.");
+            Hub.Counts.AddCompletedGiveaways();
+            detail.Notifier.SendNotification(this, detail, $"Finished uploading Pokémon to the Giveaway Pool.");
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
-            return PokeTradeResult.Success;
-        }
-        private async Task<PokeTradeResult> PerformSurpriseTrade(SAV8SWSH sav, PK8 pkm, CancellationToken token)
-        {
-            // General Bot Strategy:
-            // 1. Inject to b1s1
-            // 2. Send out Trade
-            // 3. Clear received PKM to skip the trade animation
-            // 4. Repeat
-
-            // Inject to b1s1
-            if (await CheckIfSoftBanned(token).ConfigureAwait(false))
-                await Unban(token).ConfigureAwait(false);
-
-            Log("Starting next Surprise Trade. Getting data...");
-            await SetBoxPokemon(pkm, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
-
-            if (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-            {
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                return PokeTradeResult.RecoverStart;
-            }
-
-            if (await CheckIfSearchingForSurprisePartner(token).ConfigureAwait(false))
-            {
-                Log("Still searching, reset.");
-                await ResetTradePosition(Hub.Config, token).ConfigureAwait(false);
-            }
-
-            Log("Opening Y-Comm Menu");
-            await Click(Y, 1_500, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            Log("Selecting Surprise Trade");
-            await Click(DDOWN, 0_500, token).ConfigureAwait(false);
-            await Click(A, 2_000, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            await Task.Delay(0_750, token).ConfigureAwait(false);
-
-            if (!await IsInBox(token).ConfigureAwait(false))
-            {
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                return PokeTradeResult.RecoverPostLinkCode;
-            }
-
-            Log("Selecting Pokémon");
-            // Box 1 Slot 1; no movement required.
-            await Click(A, 0_700, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            Log("Confirming...");
-            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                await Click(A, 0_800, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            // Let Surprise Trade be sent out before checking if we're back to the Overworld.
-            await Task.Delay(3_000, token).ConfigureAwait(false);
-
-            if (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-            {
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                return PokeTradeResult.RecoverReturnOverworld;
-            }
-
-            // Wait 30 Seconds for Trainer...
-            Log("Waiting for Surprise Trade Partner...");
-
-            // Wait for an offer...
-            var oldEC = await Connection.ReadBytesAsync(SurpriseTradeSearchOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
-            var partnerFound = Hub.Config.Trade.SpinTrade && Config.ConnectionType == ConnectionType.USB ? await SpinTrade(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false) : await ReadUntilChanged(SurpriseTradeSearchOffset, oldEC, Hub.Config.Trade.TradeWaitTime * 1_000, 0_200, false, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            if (!partnerFound)
-            {
-                await ResetTradePosition(Hub.Config, token).ConfigureAwait(false);
-                return PokeTradeResult.NoTrainerFound;
-            }
-
-            // Let the game flush the results and de-register from the online surprise trade queue.
-            await Task.Delay(7_000, token).ConfigureAwait(false);
-
-            var TrainerName = await GetTradePartnerName(TradeMethod.SupriseTrade, token).ConfigureAwait(false);
-            var SurprisePoke = await ReadSurpriseTradePokemon(token).ConfigureAwait(false);
-
-            Log($"Found Surprise Trade Partner: {TrainerName}, Pokémon: {(Species)SurprisePoke.Species}");
-
-            // Clear out the received trade data; we want to skip the trade animation.
-            // The box slot locks have been removed prior to searching.
-
-            await Connection.WriteBytesAsync(BitConverter.GetBytes(SurpriseTradeSearch_Empty), SurpriseTradeSearchOffset, Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.WriteBytesAsync(PokeTradeBotUtil.EMPTY_SLOT, SurpriseTradePartnerPokemonOffset, Config.ConnectionType, token).ConfigureAwait(false);
-
-            // Let the game recognize our modifications before finishing this loop.
-            await Task.Delay(5_000, token).ConfigureAwait(false);
-
-            // Clear the Surprise Trade slot locks! We'll skip the trade animation and reuse the slot on later loops.
-            // Write 8 bytes of FF to set both Int32's to -1. Regular locks are [Box32][Slot32]
-
-            await Connection.WriteBytesAsync(BitConverter.GetBytes(ulong.MaxValue), SurpriseTradeLockBox, Config.ConnectionType, token).ConfigureAwait(false);
-
-            if (token.IsCancellationRequested)
-                return PokeTradeResult.Aborted;
-
-            if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-            {
-                if (Hub.Config.Trade.SpinTrade && Config.ConnectionType == ConnectionType.USB)
-                    await SpinCorrection(token).ConfigureAwait(false);
-                Log("Trade complete!");
-            }
-            else
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-
-            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                DumpPokemon(DumpSetting.DumpFolder, "surprise", SurprisePoke);
-            Hub.Counts.AddCompletedSurprise();
-
             return PokeTradeResult.Success;
         }
 

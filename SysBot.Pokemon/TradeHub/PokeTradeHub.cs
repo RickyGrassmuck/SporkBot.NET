@@ -16,8 +16,8 @@ namespace SysBot.Pokemon
             var pool = new PokemonPool<T>(config);
             Ledy = new LedyDistributor<T>(pool);
 
-            var giveawayPool = new GiveawayPool<T>(config);
-            Giveaway = new GiveawayDistributor<T>(giveawayPool);
+            var giveawayPoolDatabase = new GiveawayPool(config);
+            GiveawayPoolDatabase = giveawayPoolDatabase;
 
 
             BotSync = new BotSynchronizer(config.Distribution);
@@ -37,7 +37,7 @@ namespace SysBot.Pokemon
 
         #region Distribution Queue
         public readonly LedyDistributor<T> Ledy;
-        public readonly GiveawayDistributor<T> Giveaway;
+        public GiveawayPool GiveawayPoolDatabase;
 
         #endregion
     }
