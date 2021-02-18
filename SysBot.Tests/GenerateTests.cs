@@ -23,15 +23,6 @@ namespace SysBot.Tests
         }
 
         [Theory]
-        [InlineData(InavlidSpec)]
-        public void ShouldNotGenerate(string set)
-        {
-            _ = AutoLegalityWrapper.GetTrainerInfo(8);
-            var s = ShowdownUtil.ConvertToShowdown(set);
-            s.Should().BeNull();
-        }
-
-        [Theory]
         [InlineData(Torkoal2, 2)]
         [InlineData(Charizard4, 4)]
         public void TestAbility(string set, int abilNumber)
@@ -43,23 +34,6 @@ namespace SysBot.Tests
                 var template = AutoLegalityWrapper.GetTemplate(s);
                 var pk = sav.GetLegal(template, out _);
                 pk.AbilityNumber.Should().Be(abilNumber);
-            }
-        }
-
-        [Theory]
-        [InlineData(Torkoal2, 2)]
-        [InlineData(Charizard4, 4)]
-        public void TestAbilityTwitch(string set, int abilNumber)
-        {
-            var sav = AutoLegalityWrapper.GetTrainerInfo(8);
-            for (int i = 0; i < 10; i++)
-            {
-                var twitch = set.Replace("\r\n", " ").Replace("\n", " ");
-                var s = ShowdownUtil.ConvertToShowdown(twitch);
-                var template = s == null ? null : AutoLegalityWrapper.GetTemplate(s);
-                var pk = template == null ? null : sav.GetLegal(template, out _);
-                pk.Should().NotBeNull();
-                pk!.AbilityNumber.Should().Be(abilNumber);
             }
         }
 

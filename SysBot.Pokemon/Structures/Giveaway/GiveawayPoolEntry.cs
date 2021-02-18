@@ -21,24 +21,28 @@ namespace SysBot.Pokemon
         {
             var entry = new GiveawayPoolEntry();
             entry.Name = name;
+            entry.Pokemon = SpeciesName.GetSpeciesName(pkm.Species, (int)LanguageID.English);
             entry.Description = description;
             entry.Status = status;
             entry.Tag = tag;
             entry.Uploader = uploader;
-            entry.PK8 = new PK8();
+            entry.PK8 = pkm;
             return entry;
         }
-        public string GetSummary()
+        public string GetSummary(bool isItem)
         {
             TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
             string summ = Id + ": " + textInfo.ToTitleCase(Name);
-            if (PK8.OT_Name != null)
-                summ += $" (" + PK8.OT_Name + ") ";
-           
-            summ += "[" + Tag + "]";
+            if (!isItem)
+            {
+                if (PK8.OT_Name != null)
+                    summ += $" (" + PK8.OT_Name + ") ";
 
-            if (PK8.IsShiny)
-                summ += "✷";
+                summ += "[" + Tag + "]";
+
+                if (PK8.IsShiny)
+                    summ += "✷";
+            }
             return summ;
         }
 

@@ -26,8 +26,7 @@ namespace SysBot.Pokemon.Discord
                 x.Name = "Summary";
                 x.Value =
                     $"Bot Count: {hub.Bots.Count}\n" +
-                    $"Bot State: {SummarizeBots(hub)}\n" +
-                    $"Pool Count: {hub.Ledy.Pool.Count}\n";
+                    $"Bot State: {SummarizeBots(hub)}\n";
                 x.IsInline = false;
             });
 

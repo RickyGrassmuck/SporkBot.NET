@@ -29,10 +29,6 @@ namespace SysBot.Pokemon
         [Category(Operation)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public LegalitySettings Legality { get; set; } = new();
-
-        [Category(Operation)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FolderSettings Folder { get; set; } = new();
         
         [Category(Operation)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -41,6 +37,10 @@ namespace SysBot.Pokemon
         [Category(Operation)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public QueueSettings Queues { get; set; } = new();
+
+        [Category(Operation)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public FolderSettings Folder { get; set; } = new();
 
         [Category(Operation), Description("Stop conditions for EggBot, FossilBot, and EncounterBot.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -64,35 +64,11 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public DistributionSettings Distribution { get; set; } = new();
 
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RaidSettings Raid { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettings Egg { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FossilSettings Fossil { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EncounterSettings Encounter { get; set; } = new();
-
         // Integration
 
         [Category(Integration)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public DiscordSettings Discord { get; set; } = new();
-
-        [Category(Integration)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public TwitchSettings Twitch { get; set; } = new();
-
-        [Category(Integration)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public YouTubeSettings YouTube { get; set; } = new();
 
         [Category(Integration), Description("Allows favored users to join the queue with a more favorable position than unfavored users.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace SysBot.Pokemon.Discord
 {
     [Summary("Generates and queues various silly trade additions")]
-    public class TradeAdditionsModule : ModuleBase<SocketCommandContext>
+    public class GiveawayModule : ModuleBase<SocketCommandContext>
     {
         private static TradeQueueInfo<PK8> Info => SysCordInstance.Self.Hub.Queues.Info;
 
@@ -38,7 +38,6 @@ namespace SysBot.Pokemon.Discord
         [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
         public async Task GiveawayUploadAsync([Summary("Display Name")] string name, [Summary("Tag")] string tag)
         {
-            var poolDB = Info.Hub.GiveawayPoolDatabase;
             int status = 0;
 
             PK8 messageContainer = new PK8
@@ -50,104 +49,7 @@ namespace SysBot.Pokemon.Discord
 
             var sig = Context.User.GetFavor();
             var code = Info.GetRandomTradeCode();
-            await Context.AddToQueueAsync(code, Context.User.Username, sig, messageContainer, PokeRoutineType.Dump, PokeTradeType.GiveawayUpload).ConfigureAwait(false);
-        }
-
-        [Command("update_entry_name")]
-        [Summary("Updates the specified entries name.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
-        public async Task GiveawayEntryUpdateName([Summary("Pool Entry ID")] string id, [Summary("Name")] string name)
-        {
-            var poolIDIsInt = int.TryParse(id, out var poolId);
-            var poolDB = Info.Hub.GiveawayPoolDatabase;
-            int result = 0;
-            if (poolIDIsInt)
-            {
-                int newEntryID = poolDB.UpdateEntry(poolId, "Name", name);
-            }
-            if (result != 0)
-            {
-                await ReplyAsync($"Updated Entry name to [" + name + "] name successfully").ConfigureAwait(false);
-                return;
-            }
-            else
-            {
-                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
-                return;
-            }
-        }
-
-        [Command("update_entry_tag")]
-        [Summary("Updates the specified entries tag.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
-        public async Task GiveawayEntryUpdateTag([Summary("Pool Entry ID")] string id, [Summary("Tag")] string tag)
-        {
-            var poolIDIsInt = int.TryParse(id, out var poolId);
-            var poolDB = Info.Hub.GiveawayPoolDatabase;
-            int result = 0;
-            if (poolIDIsInt)
-            {
-                int newEntryID = poolDB.UpdateEntry(poolId, "Tag", tag);
-            }
-            if (result != 0)
-            {
-                await ReplyAsync($"Updated Entry [" + poolId + "] tag successfully").ConfigureAwait(false);
-                return;
-            }
-            else
-            {
-                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
-                return;
-            }
-        }
-
-        [Command("update_entry_description")]
-        [Summary("Updates the specified entries description.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
-        public async Task GiveawayEntryUpdateDescription([Summary("Pool Entry ID")] string id, [Summary("Description")] string desc)
-        {
-            var poolIDIsInt = int.TryParse(id, out var poolId);
-            var poolDB = Info.Hub.GiveawayPoolDatabase;
-            int result = 0;
-            if (poolIDIsInt)
-            {
-                result = poolDB.UpdateEntry(poolId, "Description", desc);
-            }
-
-            if (result != 0)
-            {
-                await ReplyAsync($"Updated Entry [" + poolId + "] description successfully").ConfigureAwait(false);
-                return;
-            }
-            else
-            {
-                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
-                return;
-            }
-        }
-
-        [Command("update_entry_status")]
-        [Summary("Updates the specified entries name.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
-        public async Task GiveawayEntryUpdateStatus([Summary("Pool Entry ID")] string id, [Summary("Status")] string status)
-        {
-            var poolIDIsInt = int.TryParse(id, out var poolId);
-            var poolDB = Info.Hub.GiveawayPoolDatabase;
-            int result = 0;
-            if (poolIDIsInt)
-            {
-                int newEntryID = poolDB.UpdateEntry(poolId, "Status", status);
-            }
-            if (result != 0)
-            {
-                await ReplyAsync($"Updated Entry [" + poolId + "] status successfully").ConfigureAwait(false);
-                return;
-            }
-            else
-            {
-                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
-                return;
-            }
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, messageContainer, PokeRoutineType.FlexTrade, PokeTradeType.GiveawayUpload).ConfigureAwait(false);
         }
 
         [Command("giveawaypool")]
@@ -162,10 +64,10 @@ namespace SysBot.Pokemon.Discord
 
             if (activePool.Count > 0)
             {
-                foreach(GiveawayPoolEntry entry in activePool)
+                foreach (GiveawayPoolEntry entry in activePool)
                 {
 
-                    lines.Add(entry.GetSummary());
+                    lines.Add(entry.GetSummary(false));
                 }
                 var msg = string.Join("\n", lines);
                 await ListUtil("Giveaway Pool Details", msg).ConfigureAwait(false);
@@ -174,28 +76,52 @@ namespace SysBot.Pokemon.Discord
         }
 
         [Command("giveawaypool")]
-        [Alias("gap")]
-        [Summary("Show a list of Pokémon available for giveaway.")]
+        [Alias("gap", "gas")]
+        [Summary("Search the Giveaway Pool.")]
         [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
-        public async Task DisplayGiveawayPoolCountAsync([Remainder] string tag)
+        public async Task SearchGiveawayPoolAsync([Remainder] string search)
         {
+            var searchString = "%" + search + "%";
             var poolDB = Info.Hub.GiveawayPoolDatabase;
-            var activePool = poolDB.GetPoolByTag(tag);
+            var activePool = poolDB.SearchPool(searchString);
             List<string> lines = new();
 
             if (activePool.Count > 0)
             {
                 foreach (GiveawayPoolEntry entry in activePool)
                 {
-                    lines.Add(entry.GetSummary());
+                    lines.Add(entry.GetSummary(false));
                 }
                 var msg = string.Join("\n", lines);
                 await ListUtil("Giveaway Pool Details", msg).ConfigureAwait(false);
             }
             else await ReplyAsync($"Giveaway pool is empty.").ConfigureAwait(false);
         }
+
+        [Command("giveawayitempool")]
+        [Alias("gip")]
+        [Summary("Search for Giveaway Items by name.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
+        public async Task GetItemEntries()
+        {
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            var activePool = poolDB.GetPoolByTag("Item");
+            List<string> lines = new();
+
+            if (activePool.Count > 0)
+            {
+                foreach (GiveawayPoolEntry entry in activePool)
+                {
+                    lines.Add(entry.GetSummary(true));
+                }
+                var msg = string.Join("\n", lines);
+                await ListUtil("Giveaway Item Pool Details", msg).ConfigureAwait(false);
+            }
+            else await ReplyAsync($"Giveaway Item pool is empty.").ConfigureAwait(false);
+        }
+
         [Command("giveaway")]
-        [Alias("ga", "giveme", "gimme")]
+        [Alias("ga", "giveme", "gimme", "gimmie", "gimmy", "goomy")]
         [Summary("Makes the bot trade you the specified giveaway Pokémon.")]
         [RequireQueueRole(nameof(DiscordManager.RolesGiveaway))]
         public async Task GiveawayAsync([Summary("ID/Name of Pokemon to Recieve")] string Item)
@@ -227,14 +153,14 @@ namespace SysBot.Pokemon.Discord
                     await ReplyAsync($"Requested Pokémon not available, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
                     return;
                 }
-            } 
+            }
             else if (poolId <= activePool.Count) // Request is an integer and will be treated as an index so check that it's within range
             {
                 entry = activePool.Find(x => x.Id.Equals(poolId));
                 if (entry.Id != 0)
                 {
                     pk = poolDB.GetEntryPK8(entry.Id);
-                   
+
                 }
                 else
                 {
@@ -247,12 +173,107 @@ namespace SysBot.Pokemon.Discord
                 await ReplyAsync($"Provided index does not exist, use \"{Info.Hub.Config.Discord.CommandPrefix}giveawaypool\" for a full list of available giveaways!").ConfigureAwait(false);
                 return;
             }
-            
+
             var sig = Context.User.GetFavor();
             await Context.AddToQueueAsync(code, Context.User.Username, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User).ConfigureAwait(false);
         }
 
+        [Command("update_entry_name")]
+        [Summary("Updates the specified entries name.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayEntryUpdateName([Summary("Pool Entry ID")] string id, [Summary("Name")] string name)
+        {
+            var poolIDIsInt = int.TryParse(id, out var poolId);
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            int newEntryID = 0;
+            if (poolIDIsInt)
+            {
+                newEntryID = poolDB.UpdateEntry(poolId, "Name", name);
+            }
+            if (newEntryID != 0)
+            {
+                await ReplyAsync($"Updated Entry name to " + name + " successfully").ConfigureAwait(false);
+                return;
+            }
+            else
+            {
+                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
+                return;
+            }
+        }
 
+        [Command("update_entry_tag")]
+        [Summary("Updates the specified entries tag.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayEntryUpdateTag([Summary("Pool Entry ID")] string id, [Summary("Tag")] string tag)
+        {
+            var poolIDIsInt = int.TryParse(id, out var poolId);
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            int newEntryID = 0;
+            if (poolIDIsInt)
+            {
+                 newEntryID = poolDB.UpdateEntry(poolId, "Tag", tag);
+            }
+            if (newEntryID != 0)
+            {
+                await ReplyAsync($"Updated Entry tag to " + tag + " successfully").ConfigureAwait(false);
+                return;
+            }
+            else
+            {
+                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
+                return;
+            }
+        }
+
+        [Command("update_entry_description")]
+        [Summary("Updates the specified entries description.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayEntryUpdateDescription([Summary("Pool Entry ID")] string id, [Summary("Description")] string desc)
+        {
+            var poolIDIsInt = int.TryParse(id, out var poolId);
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            int newEntryID = 0;
+            if (poolIDIsInt)
+            {
+                newEntryID = poolDB.UpdateEntry(poolId, "Description", desc);
+            }
+
+            if (newEntryID != 0)
+            {
+                await ReplyAsync($"Updated Entry description to `" + desc + "` description successfully").ConfigureAwait(false);
+                return;
+            }
+            else
+            {
+                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
+                return;
+            }
+        }
+
+        [Command("update_entry_status")]
+        [Summary("Updates the specified entries name.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayEntryUpdateStatus([Summary("Pool Entry ID")] string id, [Summary("Status")] string status)
+        {
+            var poolIDIsInt = int.TryParse(id, out var poolId);
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            int newEntryID = 0;
+            if (poolIDIsInt)
+            {
+                newEntryID = poolDB.UpdateEntry(poolId, "Status", status);
+            }
+            if (newEntryID != 0)
+            {
+                await ReplyAsync($"Updated Entry status to " + status + " successfully").ConfigureAwait(false);
+                return;
+            }
+            else
+            {
+                await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
+                return;
+            }
+        }
         private async Task ListUtil(string nameMsg, string entry)
         {
             var index = 0;

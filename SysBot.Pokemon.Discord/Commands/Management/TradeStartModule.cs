@@ -71,8 +71,6 @@ namespace SysBot.Pokemon.Discord
         {
             void Logger(PokeTradeBot bot, PokeTradeDetail<PK8> detail)
             {
-                if (detail.Type == PokeTradeType.Random)
-                    return;
                 c.SendMessageAsync(GetMessage(bot, detail));
             }
 

@@ -4,21 +4,12 @@
     {
         Idle,
 
-        SurpriseTrade,
-
         FlexTrade,
         LinkTrade,
         SeedCheck,
         Clone,
         FixOT,
-        TradeCord,
         Dump,
 
-        EggFetch,
-        FossilBot,
-        RaidBot,
-        EncounterBot,
-
-        RemoteControl,
     }
 }

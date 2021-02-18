@@ -10,10 +10,10 @@ namespace SysBot.Pokemon
 
         private readonly PokeTradeQueue<T> Trade = new(PokeTradeType.Specific);
         private readonly PokeTradeQueue<T> Giveaway = new(PokeTradeType.Giveaway);
+        private readonly PokeTradeQueue<T> GiveawayUpload = new(PokeTradeType.GiveawayUpload);
         private readonly PokeTradeQueue<T> Seed = new(PokeTradeType.Seed);
         private readonly PokeTradeQueue<T> Clone = new(PokeTradeType.Clone);
         private readonly PokeTradeQueue<T> FixOT = new(PokeTradeType.FixOT);
-        private readonly PokeTradeQueue<T> TradeCord = new(PokeTradeType.TradeCord);
         private readonly PokeTradeQueue<T> Dump = new(PokeTradeType.Dump);
         public readonly TradeQueueInfo<T> Info;
         public readonly PokeTradeQueue<T>[] AllQueues;
@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
         {
             Hub = hub;
             Info = new TradeQueueInfo<T>(hub);
-            AllQueues = new[] { Seed, Dump, Clone, FixOT, TradeCord, Trade, Giveaway };
+            AllQueues = new[] { Seed, Dump, Clone, FixOT, Trade, Giveaway, GiveawayUpload };
 
             foreach (var q in AllQueues)
                 q.Queue.Settings = hub.Config.Favoritism;
@@ -32,10 +32,8 @@ namespace SysBot.Pokemon
         {
             return type switch
             {
-                PokeRoutineType.SeedCheck => Seed,
                 PokeRoutineType.Clone => Clone,
                 PokeRoutineType.FixOT => FixOT,
-                PokeRoutineType.TradeCord => TradeCord,
                 PokeRoutineType.Dump => Dump,
                 _ => Trade,
             };
@@ -45,23 +43,6 @@ namespace SysBot.Pokemon
         {
             foreach (var q in AllQueues)
                 q.Clear();
-        }
-
-        public bool TryDequeueLedy(out PokeTradeDetail<T> detail)
-        {
-            detail = default!;
-            var cfg = Hub.Config.Distribution;
-            if (!cfg.DistributeWhileIdle)
-                return false;
-
-            if (Hub.Ledy.Pool.Count == 0)
-                return false;
-
-            var random = Hub.Ledy.Pool.GetRandomPoke();
-            var code = cfg.RandomCode ? Hub.Config.Trade.GetRandomTradeCode() : cfg.TradeCode;
-            var trainer = new PokeTradeTrainerInfo("Random Distribution");
-            detail = new PokeTradeDetail<T>(random, trainer, PokeTradeHub<T>.LogNotifier, PokeTradeType.Random, code, false);
-            return true;
         }
 
         public bool TryDequeue(PokeRoutineType type, out PokeTradeDetail<T> detail, out uint priority)
@@ -131,8 +112,6 @@ namespace SysBot.Pokemon
             if (TryDequeueInternal(PokeRoutineType.Clone, out detail, out priority))
                 return true;
             if (TryDequeueInternal(PokeRoutineType.FixOT, out detail, out priority))
-                return true;
-            if (TryDequeueInternal(PokeRoutineType.TradeCord, out detail, out priority))
                 return true;
             if (TryDequeueInternal(PokeRoutineType.Dump, out detail, out priority))
                 return true;

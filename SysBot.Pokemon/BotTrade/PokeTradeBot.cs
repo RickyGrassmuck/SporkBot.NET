@@ -83,7 +83,7 @@ namespace SysBot.Pokemon
             await SetCurrentBox(0, token).ConfigureAwait(false);
             while (!token.IsCancellationRequested && Config.NextRoutineType == type)
             {
-                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority) && !Hub.Queues.TryDequeueLedy(out detail))
+                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority))
                 {
                     if (waitCounter == 0)
                     {
@@ -109,7 +109,7 @@ namespace SysBot.Pokemon
                 var result = await PerformLinkCodeTrade(sav, detail, token).ConfigureAwait(false);
                 if (result != PokeTradeResult.Success) // requeue
                 {
-                    if (result.AttemptRetry() && detail.Type != PokeTradeType.Random && !detail.IsRetry)
+                    if (result.AttemptRetry() && !detail.IsRetry)
                     {
                         detail.IsRetry = true;
                         detail.SendNotification(this, "Oops! Something happened. I'll requeue you for another attempt.");
@@ -123,13 +123,11 @@ namespace SysBot.Pokemon
                 }
             }
 
-            UpdateBarrier(false);
         }
 
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8SWSH sav, PokeTradeDetail<PK8> poke, CancellationToken token)
         {
             // Update Barrier Settings
-            UpdateBarrier(poke.IsSynchronized);
             poke.TradeInitialize(this);
             Hub.Config.Stream.EndEnterCode(this);
 
@@ -171,8 +169,7 @@ namespace SysBot.Pokemon
 
             // Loading Screen
             await Task.Delay(1_000, token).ConfigureAwait(false);
-            if (poke.Type != PokeTradeType.Random)
-                Hub.Config.Stream.StartEnterCode(this);
+            Hub.Config.Stream.StartEnterCode(this);
             await Task.Delay(1_000, token).ConfigureAwait(false);
 
             var code = poke.Code;
@@ -229,7 +226,7 @@ namespace SysBot.Pokemon
             }
 
             // Confirm Box 1 Slot 1
-            if (poke.Type == PokeTradeType.Specific || poke.Type == PokeTradeType.TradeCord || poke.Type == PokeTradeType.Giveaway)
+            if (poke.Type == PokeTradeType.Specific || poke.Type == PokeTradeType.Giveaway)
             {
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -248,7 +245,11 @@ namespace SysBot.Pokemon
             var oldEC = await Connection.ReadBytesAsync(LinkTradePartnerPokemonOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
             if (pk == null)
             {
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+                if (poke.Type == PokeTradeType.Seed)
+                    await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
+                else
+                    await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+
                 return PokeTradeResult.TrainerTooSlow;
             }
 
@@ -258,24 +259,6 @@ namespace SysBot.Pokemon
                 return await EndSeedCheckTradeAsync(poke, pk, token).ConfigureAwait(false);
             }
 
-            if (poke.Type == PokeTradeType.Random) // distribution
-            {
-                // Allow the trade partner to do a Ledy swap.
-                var trade = Hub.Ledy.GetLedyTrade(pk, Hub.Config.Distribution.LedySpecies);
-                if (trade != null)
-                {
-                    pkm = trade.Receive;
-                    poke.TradeData = pkm;
-
-                    poke.SendNotification(this, "Injecting the requested Pokémon.");
-                    await Click(A, 0_800, token).ConfigureAwait(false);
-                    await SetBoxPokemon(pkm, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
-                    await Task.Delay(2_500, token).ConfigureAwait(false);
-                }
-
-                for (int i = 0; i < 5; i++)
-                    await Click(A, 0_500, token).ConfigureAwait(false);
-            }
             else if (poke.Type == PokeTradeType.FixOT)
             {
                 var clone = (PK8)pk.Clone();
@@ -433,14 +416,10 @@ namespace SysBot.Pokemon
 
                 // Only log if we completed the trade.
                 var counts = Hub.Counts;
-                if (poke.Type == PokeTradeType.Random)
-                    counts.AddCompletedDistribution();
-                else if (poke.Type == PokeTradeType.Clone)
+                if (poke.Type == PokeTradeType.Clone)
                     counts.AddCompletedClones();
                 else if (poke.Type == PokeTradeType.FixOT)
                     counts.AddCompletedFixOTs();
-                else if (poke.Type == PokeTradeType.TradeCord)
-                    counts.AddCompletedTradeCords();
                 else if (poke.Type == PokeTradeType.Giveaway)
                     counts.AddCompletedGiveaways();
                 else
@@ -450,7 +429,7 @@ namespace SysBot.Pokemon
                 {
                     var subfolder = poke.Type.ToString().ToLower();
                     DumpPokemon(DumpSetting.DumpFolder, subfolder, traded); // received
-                    if (poke.Type == PokeTradeType.Specific || poke.Type == PokeTradeType.Clone || poke.Type == PokeTradeType.FixOT || poke.Type == PokeTradeType.TradeCord || poke.Type == PokeTradeType.Giveaway)
+                    if (poke.Type == PokeTradeType.Specific || poke.Type == PokeTradeType.Clone || poke.Type == PokeTradeType.FixOT || poke.Type == PokeTradeType.Giveaway)
                         DumpPokemon(DumpSetting.DumpFolder, "traded", pkm); // sent to partner
                 }
             }
@@ -625,29 +604,6 @@ namespace SysBot.Pokemon
 
             FailedBarrier++;
             Log($"Barrier sync timed out after {timeoutAfter} seconds. Continuing.");
-        }
-
-        /// <summary>
-        /// Checks if the barrier needs to get updated to consider this bot.
-        /// If it should be considered, it adds it to the barrier if it is not already added.
-        /// If it should not be considered, it removes it from the barrier if not already removed.
-        /// </summary>
-        private void UpdateBarrier(bool shouldWait)
-        {
-            if (ShouldWaitAtBarrier == shouldWait)
-                return; // no change required
-
-            ShouldWaitAtBarrier = shouldWait;
-            if (shouldWait)
-            {
-                Hub.BotSync.Barrier.AddParticipant();
-                Log($"Joined the Barrier. Count: {Hub.BotSync.Barrier.ParticipantCount}");
-            }
-            else
-            {
-                Hub.BotSync.Barrier.RemoveParticipant();
-                Log($"Left the Barrier. Count: {Hub.BotSync.Barrier.ParticipantCount}");
-            }
         }
 
         private async Task<bool> WaitForPokemonChanged(uint offset, int waitms, int waitInterval, CancellationToken token)

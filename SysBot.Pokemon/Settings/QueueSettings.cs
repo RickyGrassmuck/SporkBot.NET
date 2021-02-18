@@ -93,7 +93,6 @@ namespace SysBot.Pokemon
                 PokeTradeType.Seed => YieldMultCountSeedCheck,
                 PokeTradeType.Clone => YieldMultCountClone,
                 PokeTradeType.FixOT => YieldMultCountFixOT,
-                PokeTradeType.TradeCord => YieldMultCountTradeCord,
                 PokeTradeType.Dump => YieldMultCountDump,
                 _ => YieldMultCountTrade
             };
@@ -106,7 +105,6 @@ namespace SysBot.Pokemon
                 PokeTradeType.Seed => YieldMultWaitSeedCheck,
                 PokeTradeType.Clone => YieldMultWaitClone,
                 PokeTradeType.FixOT => YieldMultWaitFixOT,
-                PokeTradeType.TradeCord => YieldMultWaitTradeCord,
                 PokeTradeType.Dump => YieldMultWaitDump,
                 _ => YieldMultWaitTrade
             };

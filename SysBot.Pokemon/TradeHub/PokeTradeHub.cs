@@ -13,8 +13,6 @@ namespace SysBot.Pokemon
         public PokeTradeHub(PokeTradeHubConfig config)
         {
             Config = config;
-            var pool = new PokemonPool<T>(config);
-            Ledy = new LedyDistributor<T>(pool);
 
             var giveawayPoolDatabase = new GiveawayPool(config);
             GiveawayPoolDatabase = giveawayPoolDatabase;
@@ -36,7 +34,6 @@ namespace SysBot.Pokemon
         public readonly TradeQueueManager<T> Queues;
 
         #region Distribution Queue
-        public readonly LedyDistributor<T> Ledy;
         public GiveawayPool GiveawayPoolDatabase;
 
         #endregion

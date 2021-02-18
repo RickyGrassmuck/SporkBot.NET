@@ -80,32 +80,18 @@ namespace SysBot.Pokemon
         {
             Task.Run(async () => await new QueueMonitor(Hub).MonitorOpenQueue(CancellationToken.None).ConfigureAwait(false));
 
-            var path = Hub.Config.Folder.DistributeFolder;
-            if (!Directory.Exists(path))
-                LogUtil.LogError("The distribution folder was not found. Please verify that it exists!", "Hub");
-
-            var pool = Hub.Ledy.Pool;
-            if (!pool.Reload())
-                LogUtil.LogError("Nothing to distribute for Empty Trade Queues!", "Hub");
         }
 
         public PokeRoutineExecutor CreateBotFromConfig(PokeBotConfig cfg) => cfg.NextRoutineType switch
         {
             PokeRoutineType.FlexTrade or PokeRoutineType.Idle
-                or PokeRoutineType.SurpriseTrade
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
                 or PokeRoutineType.FixOT
-                or PokeRoutineType.TradeCord
                 or PokeRoutineType.Dump
                 or PokeRoutineType.SeedCheck
                 => new PokeTradeBot(Hub, cfg),
 
-            PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
-            PokeRoutineType.EncounterBot => new EncounterBot(cfg, Hub),
-            PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
     }

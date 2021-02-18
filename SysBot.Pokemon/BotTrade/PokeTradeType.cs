@@ -2,12 +2,10 @@
 {
     public enum PokeTradeType
     {
-        Random,
         Specific,
         Seed,
         Clone,
         FixOT,
-        TradeCord,
         Dump,
         Giveaway,
         GiveawayUpload,

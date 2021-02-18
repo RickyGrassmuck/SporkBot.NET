@@ -35,26 +35,6 @@ namespace SysBot.Pokemon
             return new PK8(data);
         }
 
-        public async Task<PK8> ReadSurpriseTradePokemon(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(SurpriseTradePartnerPokemonOffset, BoxFormatSlotSize, Config.ConnectionType, token).ConfigureAwait(false);
-            return new PK8(data);
-        }
-
-        public async Task SetLastUsedBall(Ball ball, CancellationToken token)
-        {
-            if (ball >= Ball.Fast && ball <= Ball.Beast)
-            {
-                new EncounterCount().BallIndex(ball, out int result);
-                var apriData = BitConverter.GetBytes(result);
-                await Connection.WriteBytesAsync(apriData, LastUsedBallOffset, Config.ConnectionType, token).ConfigureAwait(false);
-                return;
-            }
-
-            var data = BitConverter.GetBytes((int)ball);
-            await Connection.WriteBytesAsync(data, LastUsedBallOffset, Config.ConnectionType, token).ConfigureAwait(false);
-        }
-
         public async Task SetBoxPokemon(PK8 pkm, int box, int slot, CancellationToken token, SAV8? sav = null)
         {
             if (sav != null)
@@ -359,12 +339,6 @@ namespace SysBot.Pokemon
             return data[0] == 1;
         }
 
-        public async Task<bool> CheckIfSearchingForSurprisePartner(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(SurpriseTradeSearchOffset, 8, Config.ConnectionType, token).ConfigureAwait(false);
-            return BitConverter.ToUInt32(data, 0) == SurpriseTradeSearch_Searching;
-        }
-
         public async Task ResetTradePosition(PokeTradeHubConfig config, CancellationToken token)
         {
             Log("Resetting bot position.");
@@ -386,32 +360,12 @@ namespace SysBot.Pokemon
             await Click(B, 1_500, token).ConfigureAwait(false);
             await Click(B, 1_500, token).ConfigureAwait(false);
         }
-
-        public async Task<bool> IsEggReady(SwordShieldDaycare daycare, CancellationToken token)
-        {
-            var ofs = GetDaycareEggIsReadyOffset(daycare);
-            // Read a single byte of the Daycare metadata to check the IsEggReady flag.
-            var data = await Connection.ReadBytesAsync(ofs, 1, Config.ConnectionType, token).ConfigureAwait(false);
-            return data[0] == 1;
-        }
-
-        public async Task SetEggStepCounter(SwordShieldDaycare daycare, CancellationToken token)
-        {
-            // Set the step counter in the Daycare metadata to 180. This is the threshold that triggers the "Should I create a new egg" subroutine.
-            // When the game executes the subroutine, it will generate a new seed and set the IsEggReady flag.
-            // Just setting the IsEggReady flag won't refresh the seed; we want a different egg every time.
-            var data = new byte[] { 0xB4, 0, 0, 0 }; // 180
-            var ofs = GetDaycareStepCounterOffset(daycare);
-            await Connection.WriteBytesAsync(data, ofs, Config.ConnectionType, token).ConfigureAwait(false);
-        }
-
         public async Task<bool> IsCorrectScreen(uint expectedScreen, CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
             return BitConverter.ToUInt32(data, 0) == expectedScreen;
         }
-
-        public async Task<uint> GetCurrentScreen(CancellationToken token)
+    public async Task<uint> GetCurrentScreen(CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
             return BitConverter.ToUInt32(data, 0);
