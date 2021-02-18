@@ -223,7 +223,7 @@ namespace SysBot.Pokemon
 
             return result;
         }
-        public List<GiveawayPoolEntry> GetPool(string status = "active")
+        public List<GiveawayPoolEntry> GetPool(bool getItems = true, string status = "active")
         {
             List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
             SQLiteConnection conn = Database;
@@ -235,17 +235,33 @@ namespace SysBot.Pokemon
                 switch (status)
                 {
                     case "active":
-                        cmd.CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status AND Tag != 'Item'";
+                        var CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status";
+                        if (!getItems)
+                        {
+                            CommandText += " AND Tag != 'Item'";
+                        }
+                        cmd.CommandText = CommandText;
                         cmd.Parameters.AddWithValue("@status", status);
                         break;
                     case "inactive":
-                        cmd.CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status AND Tag != 'Item'";
+                        CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status";
+                        if (!getItems)
+                        {
+                            CommandText += " AND Tag != 'Item'";
+                        }
+                        cmd.CommandText = CommandText;
                         cmd.Parameters.AddWithValue("@status", status);
                         break;
                     default:
-                        cmd.CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool AND Tag != 'Item'";
+                        CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool";
+                        if (!getItems)
+                        {
+                            CommandText += " WHERE Tag != 'Item'";
+                        }
+                        cmd.CommandText = CommandText;
                         break;
                 }
+
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {

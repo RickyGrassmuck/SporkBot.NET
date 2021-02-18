@@ -59,7 +59,7 @@ namespace SysBot.Pokemon.Discord
         public async Task DisplayGiveawayPoolCountAsync()
         {
             var poolDB = Info.Hub.GiveawayPoolDatabase;
-            var activePool = poolDB.GetPool();
+            var activePool = poolDB.GetPool(false);
             List<string> lines = new();
 
             if (activePool.Count > 0)
@@ -129,7 +129,7 @@ namespace SysBot.Pokemon.Discord
             var code = Info.GetRandomTradeCode();
             PK8 pk;
             var poolDB = Info.Hub.GiveawayPoolDatabase;
-            var activePool = Info.Hub.GiveawayPoolDatabase.GetPool();
+            var activePool = Info.Hub.GiveawayPoolDatabase.GetPool(true);
             GiveawayPoolEntry entry;
             if (activePool.Count == 0)
             {
