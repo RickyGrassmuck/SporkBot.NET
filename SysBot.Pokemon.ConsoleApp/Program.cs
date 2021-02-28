@@ -33,8 +33,11 @@ namespace SysBot.Pokemon.ConsoleApp
                 env.StartAll();
                 Console.WriteLine("Started all bots.");
                 Console.WriteLine("Press any key to stop execution and quit.");
-                Console.ReadKey();
-                env.StopAll();
+                Console.CancelKeyPress += delegate {
+                    env.StopAll();
+                };
+
+                while (true) { }
             }
             else
             {

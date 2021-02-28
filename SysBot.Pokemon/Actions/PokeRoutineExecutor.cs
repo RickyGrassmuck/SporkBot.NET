@@ -144,7 +144,7 @@ namespace SysBot.Pokemon
             var sav = new SAV8SWSH();
             var info = sav.MyStatus;
             var read = await Connection.ReadBytesAsync(TrainerDataOffset, TrainerDataLength, Config.ConnectionType, token).ConfigureAwait(false);
-            read.CopyTo(info.Data);
+            read.CopyTo(info.Data, 0);
             return sav;
         }
 

@@ -202,6 +202,13 @@ namespace SysBot.Pokemon.Discord
 
             // Check Permission
             var mgr = SysCordInstance.Manager;
+
+            if (!mgr.CanUseCommandChannel(msg.Channel.Id) )
+            {
+                await Log(new LogMessage(LogSeverity.Info, "Command", $"Ignoring command from #{msg.Channel.Name}")).ConfigureAwait(false);
+                return true;
+            }
+
             if (!mgr.CanUseCommandUser(msg.Author.Id))
             {
                 await msg.Channel.SendMessageAsync("You are not permitted to use this command.").ConfigureAwait(false);
