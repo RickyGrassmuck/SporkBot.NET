@@ -27,7 +27,7 @@ namespace SysBot.Base
             {
                 foreach (UsbRegistry ur in UsbDevice.AllLibUsbDevices)
                 {
-                    ur.DeviceProperties.TryGetValue("Address", out object addr);
+                    ur.DeviceProperties.TryGetValue("Address", out object? addr);
                     if (ur.Vid == 0x057E && ur.Pid == 0x3000)
                         SwDevice = ur.Device;
                 }

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.4</TargetFramework>
+    <DefineConstants>$(DefineConstants);DOTNET_CORE</DefineConstants>
+    <DebugType>portable</DebugType>
+    <AssemblyName>Microsoft.Z3</AssemblyName>
+    <OutputType>Library</OutputType>
+    <PackageId>Microsoft.Z3</PackageId>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
+    <Version>4.8.10</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Microsoft</Authors>
+    <Company>Microsoft</Company>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Description>Z3 is a satisfiability modulo theories solver from Microsoft Research.</Description>
+    <Copyright>Copyright Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageTags>smt constraint solver theorem prover</PackageTags>
+    <AssemblyOriginatorKeyFile>C:\Users\The Boss\Documents\Development\z3-z3-4.8.10\src\api\dotnet\Microsoft.Z3.snk</AssemblyOriginatorKeyFile>
+<SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\api\dotnet\*.cs;*.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+</Project>

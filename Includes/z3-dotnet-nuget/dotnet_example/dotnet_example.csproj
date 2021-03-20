@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\examples\dotnet/*.cs" />
+    <Reference Include="Microsoft.Z3">
+      <HintPath>..\Microsoft.Z3.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

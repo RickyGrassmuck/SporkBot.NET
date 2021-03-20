@@ -17,17 +17,23 @@ namespace SysBot.Pokemon
 {
     public class GiveawayPool
     {
-        public SQLiteConnection Database;
         public readonly PokeTradeHubConfig HubConfig;
         public GiveawayPool(PokeTradeHubConfig hub)
         {
             HubConfig = hub;
-            Database = NewConnection();
             CreateTable();
         }
         private SQLiteConnection NewConnection()
         {
-            string dbfile = HubConfig.Giveaway.GiveawayFolder + "/giveawaypool.sqlite3";
+            string dbfile;
+            if (HubConfig.Giveaway.GiveawayFolder != "")
+            {
+                dbfile = HubConfig.Giveaway.GiveawayFolder + "/giveawaypool.sqlite3";
+            }
+            else
+            {
+                dbfile = "giveawaypool.sqlite3";
+            }
             string cs = @"URI = file:" + dbfile + ";Version=3; Foreign Keys=True;";
             LogUtil.LogInfo("Connecting to GiveawayPool DB: " + dbfile, nameof(GiveawayPool));
 
@@ -37,7 +43,7 @@ namespace SysBot.Pokemon
         }
         private void CreateTable()
         {
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
             try
             {
                 using var cmd = new SQLiteCommand(conn)
@@ -59,12 +65,15 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error creating Giveawaypool Table: " + e.Message, nameof(GiveawayPool));
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return;
         }
         public int NewEntry(GiveawayPoolEntry entry)
         {
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection(); ;
             int result = -1;
             int entryID = 0;
             try
@@ -88,17 +97,22 @@ namespace SysBot.Pokemon
                 LogUtil.LogInfo("Error inserting new entry: " + e.Message, nameof(GiveawayPool));
                 return 0;
             }
+
             try
             {
                 using SQLiteCommand getRow = new SQLiteCommand(conn);
                 getRow.CommandText = "SELECT last_insert_rowid()";
                 var lastRow = getRow.ExecuteScalar();
-                entryID = Int32.Parse(lastRow.ToString());
+                Int32.TryParse(lastRow.ToString(), out entryID);
             }
             catch (SQLiteException e)
             {
                 LogUtil.LogInfo("Error getting new entry id: " + e.Message, nameof(GiveawayPool));
-                return 0;
+                entryID = 0;
+            }
+            finally
+            {
+                conn.Close();
             }
 
             return entryID;
@@ -106,7 +120,7 @@ namespace SysBot.Pokemon
         public GiveawayPoolEntry GetEntryByName(string name)
         {
             GiveawayPoolEntry entry = new GiveawayPoolEntry();
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
 
             try
             {
@@ -117,7 +131,8 @@ namespace SysBot.Pokemon
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    entry.Id = Int32.Parse(reader["Id"].ToString());
+                    Int32.TryParse(reader["Id"].ToString(), out var id);
+                    entry.Id = id;
                     entry.Name = reader["Name"].ToString();
                     entry.Pokemon = reader["Pokemon"].ToString();
                     entry.Description = reader["Description"].ToString();
@@ -130,13 +145,16 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return entry;
         }
         public GiveawayPoolEntry GetEntryById(int Id)
         {
             GiveawayPoolEntry entry = new GiveawayPoolEntry();
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
 
             try
             {
@@ -147,7 +165,8 @@ namespace SysBot.Pokemon
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    entry.Id = Int32.Parse(reader["Id"].ToString());
+                    Int32.TryParse(reader["Id"].ToString(), out var id);
+                    entry.Id = id;
                     entry.Name = reader["Name"].ToString();
                     entry.Pokemon = reader["Pokemon"].ToString();
                     entry.Description = reader["Description"].ToString();
@@ -161,12 +180,16 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
             }
+            finally
+            {
+                conn.Close();
+            }
 
             return entry;
         }
         public PK8 GetEntryPK8(int Id)
         {
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
             
             try
             {
@@ -195,11 +218,15 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error getting new entry id: " + e.Message, nameof(GiveawayPool));
             }
+            finally
+            {
+                conn.Close();
+            }
             return new PK8();
         }
         public int UpdateEntry(int entryID, string column, string newValue)
         {
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
             int result = -1;
             try
             {
@@ -218,15 +245,18 @@ namespace SysBot.Pokemon
             catch (SQLiteException e)
             {
                 LogUtil.LogInfo("Error inserting new entry: " + e.Message, nameof(GiveawayPool));
-                return 0;
+                result = 0;
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return result;
         }
         public List<GiveawayPoolEntry> GetPool(bool getItems = true, string status = "active")
         {
             List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
 
             try
             {
@@ -266,8 +296,9 @@ namespace SysBot.Pokemon
                 while (reader.Read())
                 {
                     GiveawayPoolEntry entry = new GiveawayPoolEntry();
-                   
-                    entry.Id = Int32.Parse(reader["Id"].ToString());
+
+                    Int32.TryParse(reader["Id"].ToString(), out var id);
+                    entry.Id = id;
                     entry.Name = reader["Name"].ToString();
                     entry.Tag = reader["Tag"].ToString();
                     entry.Status = reader["Status"].ToString();
@@ -279,13 +310,16 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return entries;
         }
         public List<GiveawayPoolEntry> GetPoolByTag(string tag)
         {
             List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
 
             try
             {
@@ -298,7 +332,8 @@ namespace SysBot.Pokemon
                 {
                     GiveawayPoolEntry entry = new GiveawayPoolEntry();
 
-                    entry.Id = Int32.Parse(reader["Id"].ToString());
+                    Int32.TryParse(reader["Id"].ToString(), out var id);
+                    entry.Id = id;
                     entry.Name = reader["Name"].ToString();
                     entry.Tag = reader["Tag"].ToString();
                     entry.Status = reader["Status"].ToString();
@@ -310,13 +345,16 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return entries;
         }
         public List<GiveawayPoolEntry> SearchPool(string search)
         {
             List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
-            SQLiteConnection conn = Database;
+            SQLiteConnection conn = NewConnection();
 
             try
             {
@@ -331,7 +369,8 @@ namespace SysBot.Pokemon
                 {
                     GiveawayPoolEntry entry = new GiveawayPoolEntry();
 
-                    entry.Id = Int32.Parse(reader["Id"].ToString());
+                    Int32.TryParse(reader["Id"].ToString(), out var id);
+                    entry.Id = id;
                     entry.Name = reader["Name"].ToString();
                     entry.Tag = reader["Tag"].ToString();
                     entry.Status = reader["Status"].ToString();
@@ -343,28 +382,34 @@ namespace SysBot.Pokemon
             {
                 LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
             }
-
+            finally
+            {
+                conn.Close();
+            }
             return entries;
         }
 
         public class Utils
         {
-            public static string PK8ToB64(PK8 pk8)
+            public static string PK8ToB64(PK8? pk8)
             {
-                return Convert.ToBase64String(pk8.Data);
-            }
-            public static PK8 B64ToPK8(string encodedData)
-            {
-                var decoded = new PK8(Convert.FromBase64String(encodedData));
-                if (decoded != null)
+                if (pk8 != null)
                 {
+                    return Convert.ToBase64String(pk8.Data);
+                }
+                return "";
+            }
+            public static PK8 B64ToPK8(string? encodedData)
+            {
+                if (encodedData != null)
+                {
+                    var decoded = new PK8(Convert.FromBase64String(encodedData));
                     return decoded;
                 }
                 else
                 {
                     return new PK8();
                 }
-
             }
         }
     }

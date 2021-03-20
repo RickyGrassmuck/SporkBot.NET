@@ -9,10 +9,10 @@ namespace SysBot.Pokemon
     public class GiveawayPoolEntry
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Status { get; set; }
-        public string Tag { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public string? Status { get; set; }
+        public string? Tag { get; set; }
         public string? Uploader { get; set; }
         public PK8? PK8 { get; set; }
         public string? Pokemon { get; set; }
@@ -32,18 +32,28 @@ namespace SysBot.Pokemon
         public string GetSummary(bool isItem)
         {
             TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
-            string summ = Id + ": " + textInfo.ToTitleCase(Name);
-            if (!isItem)
+            if (Name != null)
             {
-                if (PK8.OT_Name != null)
-                    summ += $" (" + PK8.OT_Name + ") ";
+                string summ = Id + ": " + textInfo.ToTitleCase(Name);
+                if (!isItem)
+                {
+                    if (PK8 != null)
+                    {
+                        if (PK8.OT_Name != null)
+                            summ += $" (" + PK8.OT_Name + ") ";
+                    }
+                    
 
-                summ += "[" + Tag + "]";
-
-                if (PK8.IsShiny)
-                    summ += "✷";
+                    summ += "[" + Tag + "]";
+                    if (PK8 != null)
+                    {
+                        if (PK8.IsShiny)
+                            summ += "✷";
+                    }
+                }
+                return summ;
             }
-            return summ;
+            return "";
         }
 
     }
