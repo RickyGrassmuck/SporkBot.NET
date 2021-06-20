@@ -28,7 +28,7 @@ namespace SysBot.Pokemon.Discord
 
         public void TradeInitialize(PokeRoutineExecutor routine, PokeTradeDetail<T> info)
         {
-            var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
+            var receive = $" ({info.PoolEntry.Name})";
             Trader.SendMessageAsync($"Initializing trade{receive}. Please be ready. Your code is **{Code:0000 0000}**.").ConfigureAwait(false);
         }
 
@@ -50,7 +50,7 @@ namespace SysBot.Pokemon.Discord
         {
             OnFinish?.Invoke(routine);
             var tradedToUser = Data.Species;
-            var message = tradedToUser != 0 ? $"Trade finished. Enjoy your {(Species)tradedToUser}!" : "Trade finished!";
+            var message = tradedToUser != 0 ? $"Trade finished. Enjoy your {info.PoolEntry.Name}!" : "Trade finished!";
             Trader.SendMessageAsync(message).ConfigureAwait(false);
             if (result.Species != 0 && Hub.Config.Discord.ReturnPK8s)
                 Trader.SendPKMAsync(result, "Here's what you traded me!").ConfigureAwait(false);

@@ -20,15 +20,20 @@ namespace SysBot.Pokemon.Discord
             await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.Clone, PokeTradeType.Clone).ConfigureAwait(false);
         }
 
-        [Command("clone")]
-        [Alias("c")]
+        [Command("multiclone")]
+        [Alias("mc")]
         [Summary("Clones the Pokémon you show via Link Trade.")]
         [RequireQueueRole(nameof(DiscordManager.RolesClone))]
-        public async Task CloneAsync([Summary("Trade Code")][Remainder] string code)
+        public async Task CloneAsync([Summary("Clone Count")][Remainder] string cloneCount)
         {
-            int tradeCode = Util.ToInt32(code);
+            int count = Util.ToInt32(cloneCount);
+            var entry = new GiveawayPoolEntry
+            {
+                Count = count
+            };
             var sig = Context.User.GetFavor();
-            await Context.AddToQueueAsync(tradeCode == 0 ? Info.GetRandomTradeCode() : tradeCode, Context.User.Username, sig, new PK8(), PokeRoutineType.Clone, PokeTradeType.Clone).ConfigureAwait(false);
+            var code = 88891234;
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.Clone, PokeTradeType.Clone, Context.User, entry).ConfigureAwait(false);
         }
 
         [Command("clone")]

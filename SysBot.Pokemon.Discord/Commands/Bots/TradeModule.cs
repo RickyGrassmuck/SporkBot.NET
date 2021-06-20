@@ -174,7 +174,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            await Context.AddToQueueAsync(code, trainerName, sig, pk8, PokeRoutineType.LinkTrade, PokeTradeType.Specific, usr).ConfigureAwait(false);
+            await Context.AddToQueueAsync(code, trainerName, sig, pk8, PokeRoutineType.LinkTrade, PokeTradeType.Specific, usr, new GiveawayPoolEntry()).ConfigureAwait(false);
         }
 
         private async Task<bool> TrollAsync(bool invalid, IBattleTemplate set)

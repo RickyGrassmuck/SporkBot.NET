@@ -41,7 +41,9 @@ namespace System.Collections.Concurrent
         {
             lock (_syncLock)
             {
+#pragma warning disable CS8601 // Possible null reference assignment.
                 result = _list.Find(condition);
+#pragma warning restore CS8601 // Possible null reference assignment.
                 if (result == null)
                     return false;
 

@@ -96,7 +96,7 @@ namespace SysBot.Tests
 
         private static TradeEntry<PK8> GetTestTrade(int tag, bool favor)
         {
-            var d3 = new PokeTradeDetail<PK8>(new PK8 { Species = tag }, new PokeTradeTrainerInfo($"{(favor ? "*" : "")}Test {tag}"), new PokeTradeLogNotifier<PK8>(), PokeTradeType.Specific, tag, favor);
+            var d3 = new PokeTradeDetail<PK8>(new PK8 { Species = tag }, new PokeTradeTrainerInfo($"{(favor ? "*" : "")}Test {tag}"), new GiveawayPoolEntry() , new PokeTradeLogNotifier<PK8>(), PokeTradeType.Specific, tag, favor);
             return new TradeEntry<PK8>(d3, (ulong)tag, PokeRoutineType.LinkTrade, $"Test Trade {tag}");
         }
 

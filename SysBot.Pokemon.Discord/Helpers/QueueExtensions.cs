@@ -11,7 +11,7 @@ namespace SysBot.Pokemon.Discord
     {
         private const uint MaxTradeCode = 99999999;
 
-        public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader)
+        public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader, GiveawayPoolEntry poolEntry)
         {
             if ((uint)code > MaxTradeCode)
             {
@@ -34,7 +34,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             // Try adding
-            var result = Context.AddToTradeQueue(trade, code, trainer, sig, routine, type, trader, out var msg);
+            var result = Context.AddToTradeQueue(trade, code, poolEntry, trainer, sig, routine, type, trader, out var msg);
 
             // Notify in channel
             await Context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
@@ -57,10 +57,10 @@ namespace SysBot.Pokemon.Discord
 
         public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type)
         {
-            await AddToQueueAsync(Context, code, trainer, sig, trade, routine, type, Context.User).ConfigureAwait(false);
+               await AddToQueueAsync(Context, code, trainer, sig, trade, routine, type, Context.User, new GiveawayPoolEntry()).ConfigureAwait(false);
         }
 
-        private static bool AddToTradeQueue(this SocketCommandContext Context, PK8 pk8, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg)
+        private static bool AddToTradeQueue(this SocketCommandContext Context, PK8 pk8, int code, GiveawayPoolEntry poolEntry ,string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg)
         {
             var user = trader;
             var userID = user.Id;
@@ -68,7 +68,7 @@ namespace SysBot.Pokemon.Discord
 
             var trainer = new PokeTradeTrainerInfo(trainerName);
             var notifier = new DiscordTradeNotifier<PK8>(pk8, trainer, code, user, Context);
-            var detail = new PokeTradeDetail<PK8>(pk8, trainer, notifier, t, code: code, sig == RequestSignificance.Favored);
+            var detail = new PokeTradeDetail<PK8>(pk8, trainer, poolEntry, notifier, t, code: code, sig == RequestSignificance.Favored);
             var trade = new TradeEntry<PK8>(detail, userID, type, name);
 
             var hub = SysCordInstance.Self.Hub;

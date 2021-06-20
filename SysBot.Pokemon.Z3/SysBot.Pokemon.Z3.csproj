@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net5.0;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net4.7;net5.0;</TargetFrameworks>
     <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <Platforms>x64;x86;AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Z3" Version="4.8.10" />
     <PackageReference Include="PKHeX.Core" Version="20.11.28" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
   </ItemGroup>
@@ -15,7 +16,7 @@
     <Reference Include="Microsoft.Z3">
       <HintPath>deps\Microsoft.Z3.dll</HintPath>
     </Reference>
-    <Folder Include="deps/"/>
+    <Folder Include="deps/" />
   </ItemGroup>
  
 
