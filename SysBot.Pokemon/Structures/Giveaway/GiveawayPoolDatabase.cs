@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
             }
             else
             {
-                dbfile = "giveawaybot.sqlite3";
+                dbfile = "giveawaypool.sqlite3";
             }
             string cs = @"URI = file:" + dbfile + ";Version=3; Foreign Keys=True;";
             LogUtil.LogInfo("Connecting to GiveawayPool DB: " + dbfile, nameof(GiveawayPool));
