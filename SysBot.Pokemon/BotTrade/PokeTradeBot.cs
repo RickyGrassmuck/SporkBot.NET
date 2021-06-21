@@ -170,15 +170,20 @@ namespace SysBot.Pokemon
 
             // Loading Screen
             await Task.Delay(1_000, token).ConfigureAwait(false);
+
+            // Create Code Assets
             Hub.Config.Stream.StartEnterCode(this);
             await Task.Delay(1_000, token).ConfigureAwait(false);
 
+            // Enter Code
             var code = poke.Code;
             Log($"Entering Link Trade Code: {code:0000 0000}...");
             await EnterTradeCode(code, Hub.Config, token).ConfigureAwait(false);
 
             // Wait for Barrier to trigger all bots simultaneously.
             WaitAtBarrierIfApplicable(token);
+
+
             await Click(PLUS, 1_000, token).ConfigureAwait(false);
 
             Hub.Config.Stream.EndEnterCode(this);
@@ -220,6 +225,7 @@ namespace SysBot.Pokemon
             var TrainerName = await GetTradePartnerName(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             Log($"Found Trading Partner: {TrainerName}...");
 
+            // Make sure we're in the box screen
             if (!await IsInBox(token).ConfigureAwait(false))
             {
                 await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
@@ -262,7 +268,6 @@ namespace SysBot.Pokemon
                 // Immediately exit, we aren't trading anything.
                 return await EndSeedCheckTradeAsync(poke, pk, token).ConfigureAwait(false);
             }
-
             else if (poke.Type == PokeTradeType.FixOT)
             {
                 var clone = (PK8)pk.Clone();
