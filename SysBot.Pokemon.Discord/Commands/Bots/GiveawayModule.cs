@@ -127,7 +127,7 @@ namespace SysBot.Pokemon.Discord
                 var msg = string.Join("\n", lines);
                 await ListUtil("Pokemon Pool Details", msg).ConfigureAwait(false);
             }
-            else await ReplyAsync($"Giveaway Pokemon pool is empty.").ConfigureAwait(false);
+            else await ReplyAsync($"No entries found matching: \"{searchString}\".").ConfigureAwait(false);
         }
 
         [Command("itemsearch")]
@@ -150,7 +150,7 @@ namespace SysBot.Pokemon.Discord
                 var msg = string.Join("\n", lines);
                 await ListUtil("Item Pool Details", msg).ConfigureAwait(false);
             }
-            else await ReplyAsync($"Giveaway Item pool is empty.").ConfigureAwait(false);
+            else await ReplyAsync($"No entries found matching: \"{searchString}\".").ConfigureAwait(false);
         }
 
         [Command("giveawaypoke")]
@@ -371,6 +371,60 @@ namespace SysBot.Pokemon.Discord
             else
             {
                 await ReplyAsync($"Error updating entry, please check the logs").ConfigureAwait(false);
+                return;
+            }
+        }
+
+        [Command("delete_entry")]
+        [Summary("Deletes the specified entry from the database.")]
+        [RequireQueueRole(nameof(DiscordManager.RolesGiveawayUploader))]
+        public async Task GiveawayEntryDelete([Summary("Type (item/pokemon)")] string pooltype, [Summary("Pool Entry ID")] string id)
+        {
+            var poolIDIsInt = int.TryParse(id, out var poolId);
+            var poolDB = Info.Hub.GiveawayPoolDatabase;
+            string poolName;
+            GiveawayPoolEntry? entry;
+
+            if (pooltype.ToLower() == "item")
+            {
+                poolName = SysCord.ITEM_POOL;
+            }
+            else if (pooltype == "pokemon")
+            {
+                poolName = SysCord.POKEMON_POOL;
+            }
+            else
+            {
+                await ReplyAsync($"Must specify pool, Valid Choices: item, pokemon)").ConfigureAwait(false);
+                return;
+            }
+            if (poolIDIsInt)
+            {
+                entry = poolDB.GetEntry(poolName, poolId);
+            }
+            else
+            {
+                await ReplyAsync($"Provided entry ID is not valid: {id}").ConfigureAwait(false);
+                return;
+            }
+            if (entry != null)
+            {
+                LogUtil.LogInfo($"Deleting {entry.Name} from {poolName}", nameof(GiveawayModule));
+                int result = poolDB.DeleteEntry(poolName, poolId);
+                if (result == -1)
+                {
+                    await ReplyAsync($"Error updating entry, please check the bots logs").ConfigureAwait(false);
+                    return;
+                }
+                else
+                {
+                    await ReplyAsync($"Deleted entry \"{entry.Name}\" from {poolName}").ConfigureAwait(false);
+                    return;
+                }
+            }
+            else
+            {
+                await ReplyAsync($"No entry found for ID: {poolId}").ConfigureAwait(false);
                 return;
             }
         }

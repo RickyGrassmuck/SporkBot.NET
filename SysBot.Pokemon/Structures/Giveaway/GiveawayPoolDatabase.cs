@@ -175,6 +175,7 @@ namespace SysBot.Pokemon
             }
             return null;
         }
+
         public int UpdateEntry(string pool, int entryID, string column, string newValue)
         {
             SQLiteConnection conn = NewConnection();
@@ -197,6 +198,34 @@ namespace SysBot.Pokemon
             catch (SQLiteException e)
             {
                 LogUtil.LogInfo("Error inserting new entry: " + e.Message, nameof(GiveawayPool));
+                result = 0;
+            }
+            finally
+            {
+                conn.Close();
+            }
+            return result;
+        }
+        public int DeleteEntry (string pool, int entryID)
+        {
+            SQLiteConnection conn = NewConnection();
+            int result = -1;
+            try
+            {
+
+                using SQLiteCommand cmd = new SQLiteCommand(conn);
+                cmd.CommandText = "DELETE FROM " + pool
+                                + " WHERE Id = @Id";
+                cmd.Prepare();
+                cmd.Parameters.AddWithValue("@Id", entryID);
+                cmd.Parameters.AddWithValue("@pool", pool);
+
+                result = cmd.ExecuteNonQuery();
+
+            }
+            catch (SQLiteException e)
+            {
+                LogUtil.LogInfo("Error deleting: " + e.Message, nameof(GiveawayPool));
                 result = 0;
             }
             finally

@@ -232,6 +232,7 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.RecoverOpenBox;
             }
 
+            LogUtil.LogInfo($"PokeTradeType: {poke.Type}", "PokeTradeBot");
             // Confirm Box 1 Slot 1
             if (poke.Type == PokeTradeType.Specific || poke.Type == PokeTradeType.Giveaway)
             {
@@ -627,24 +628,33 @@ namespace SysBot.Pokemon
                 poolEntry.PK8 = pk;
                 poolEntry.Pokemon = SpeciesName.GetSpeciesName( pk.Species, 2);
 
-                var la = new LegalityAnalysis(poolEntry.PK8);
-                var verbose = la.Report(true);
-                if (GiveawaySetting.GiveawayUpload && la.Valid)
-                    Hub.GiveawayPoolDatabase.NewEntry(poolEntry);
-
-                Log($"Shown Pokémon is {(la.Valid ? "Valid" : "Invalid")}.");
-                detail.SendNotification(this, pk, verbose);
+                if (Hub.Config.Legality.VerifyLegality)
+                {
+                    LogUtil.LogInfo($"Performing legality check on {poolEntry.Pokemon}", "PokeTradeBot.GiveawayUpload");
+                    var la = new LegalityAnalysis(poolEntry.PK8);
+                    var verbose = la.Report(true);
+                    LogUtil.LogInfo($"Shown Pokémon is {(la.Valid ? "Valid" : "Invalid")}.", "PokeTradeBot.GiveawayUpload");
+                    detail.SendNotification(this, pk, $"Pokémon sent is {(la.Valid ? "Valid" : "Invalid")}.");
+                    detail.SendNotification(this, pk, verbose);
+                    if (!la.Valid)
+                    {
+                        detail.SendNotification(this, pk, $"Show a different pokemon to continue or exit the trade to end.");
+                        continue;
+                    }
+                }
+                LogUtil.LogInfo("Creating new database entry", "PokeTradeBot.GiveawayUpload");
+                Hub.GiveawayPoolDatabase.NewEntry(poolEntry);
                 if (Hub.Config.Discord.ReturnPK8s)
                     detail.SendNotification(this, pk, "Here's what you showed me!");
+
                 ctr++;
             }
 
-            Log($"Ended Giveaway pool upload");
+            LogUtil.LogInfo($"Ended Giveaway pool upload", "PokeTradeBot.GiveawayUpload");
             await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
             if (ctr == 0)
                 return PokeTradeResult.TrainerTooSlow;
 
-            Hub.Counts.AddCompletedGiveaways();
             detail.Notifier.SendNotification(this, detail, $"Finished uploading Pokémon to the Giveaway Pool.");
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
             return PokeTradeResult.Success;
