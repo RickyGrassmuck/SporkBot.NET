@@ -365,7 +365,7 @@ namespace SysBot.Pokemon
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
             return BitConverter.ToUInt32(data, 0) == expectedScreen;
         }
-    public async Task<uint> GetCurrentScreen(CancellationToken token)
+        public async Task<uint> GetCurrentScreen(CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, Config.ConnectionType, token).ConfigureAwait(false);
             return BitConverter.ToUInt32(data, 0);
