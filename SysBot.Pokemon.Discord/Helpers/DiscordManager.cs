@@ -15,6 +15,8 @@ namespace SysBot.Pokemon.Discord
         public readonly SensitiveSet<ulong> SudoDiscord = new();
         public readonly SensitiveSet<string> SudoRoles = new();
         public readonly SensitiveSet<string> FavoredRoles = new();
+        
+        public readonly SensitiveSet<string> Limits = new();
 
         public readonly SensitiveSet<string> RolesClone = new();
         public readonly SensitiveSet<string> RolesFixOT = new();

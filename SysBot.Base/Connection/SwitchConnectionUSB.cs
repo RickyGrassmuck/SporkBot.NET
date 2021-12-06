@@ -28,6 +28,7 @@ namespace SysBot.Base
                 foreach (UsbRegistry ur in UsbDevice.AllLibUsbDevices)
                 {
                     ur.DeviceProperties.TryGetValue("Address", out object? addr);
+                    LogUtil.LogInfo(ur.Name + " - " + ur.Vid + ":" + ur.SymbolicName, "USB-Async");
                     if (ur.Vid == 0x057E && ur.Pid == 0x3000)
                         SwDevice = ur.Device;
                 }

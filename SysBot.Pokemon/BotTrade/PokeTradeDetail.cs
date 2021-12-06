@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace SysBot.Pokemon
 {
-    public class PokeTradeDetail<TPoke> : IEquatable<PokeTradeDetail<TPoke>>, IFavoredEntry where TPoke : PKM, new()
+        public class PokeTradeDetail<TPoke> : IEquatable<PokeTradeDetail<TPoke>>, IFavoredEntry where TPoke : PKM, new()
     {
         // ReSharper disable once StaticMemberInGenericType
         private static int CreatedCount;
@@ -13,6 +13,7 @@ namespace SysBot.Pokemon
 
         public readonly int Code;
         public TPoke TradeData;
+        public GiveawayPoolEntry PoolEntry;
         public readonly PokeTradeTrainerInfo Trainer;
         public readonly IPokeTradeNotifier<TPoke> Notifier;
         public readonly PokeTradeType Type;
@@ -21,10 +22,11 @@ namespace SysBot.Pokemon
 
         public bool IsRetry;
 
-        public PokeTradeDetail(TPoke pkm, PokeTradeTrainerInfo info, IPokeTradeNotifier<TPoke> notifier, PokeTradeType type, int code, bool favored = false)
+        public PokeTradeDetail(TPoke pkm, PokeTradeTrainerInfo info, GiveawayPoolEntry poolEntry, IPokeTradeNotifier<TPoke> notifier, PokeTradeType type, int code, bool favored = false)
         {
             Code = code;
             TradeData = pkm;
+            PoolEntry = poolEntry;
             Trainer = info;
             Notifier = notifier;
             Type = type;
@@ -67,9 +69,9 @@ namespace SysBot.Pokemon
 
         public string Summary(int i)
         {
-            if (TradeData.Species == 0)
+            if (PoolEntry.Name == "")
                 return $"{i:00}: {Trainer.TrainerName}";
-            return $"{i:00}: {Trainer.TrainerName}, {(Species)TradeData.Species}";
+            return $"{i:00}: {Trainer.TrainerName}, {PoolEntry.Name}";
         }
     }
 }

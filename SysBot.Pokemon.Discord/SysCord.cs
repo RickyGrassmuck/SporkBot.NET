@@ -24,6 +24,8 @@ namespace SysBot.Pokemon.Discord
     {
         private readonly DiscordSocketClient _client;
         public readonly PokeTradeHub<PK8> Hub;
+        public const string POKEMON_POOL = "pokemon_pool";
+        public const string ITEM_POOL = "item_pool";
 
         // Keep the CommandService and DI container around for use with commands.
         // These two types require you install the Discord.Net.Commands package.

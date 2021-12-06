@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net47;net5.0;</TargetFrameworks>
+    <RuntimeIdentifier>linux-arm64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <LangVersion>9</LangVersion>
@@ -17,7 +18,6 @@
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Z3\SysBot.Pokemon.Z3.csproj" />
   </ItemGroup>
-
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) AND '$(Configuration)' == 'Release' ">
     <PackageReference Include="Costura.Fody" Version="4.1.0" />
     <PackageReference Include="Fody" Version="6.0.5">
@@ -25,5 +25,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
 
 </Project>

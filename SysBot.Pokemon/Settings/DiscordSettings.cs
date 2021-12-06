@@ -40,6 +40,7 @@ namespace SysBot.Pokemon
 
         [Category(Whitelists), Description("Users with this role are allowed to enter the Clone queue.")]
         public string RoleCanClone { get; set; } = DefaultDisable;
+        
 
         [Category(Whitelists), Description("Users with this role are allowed to enter the FixOT queue.")]
         public string RoleCanFixOT { get; set; } = DefaultDisable;

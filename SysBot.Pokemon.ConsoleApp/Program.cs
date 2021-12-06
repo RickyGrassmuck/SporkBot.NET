@@ -47,10 +47,8 @@ namespace SysBot.Pokemon.ConsoleApp
                 var hub = new PokeTradeHubConfig();
                 CreateNewConfig(hub);
                 hub.Folder.CreateDefaults(WorkingDirectory);
-                if (!File.Exists(WorkingDirectory + "/giveawaypool.sqlite3"))
-                {
-                    File.Create(WorkingDirectory + "/giveawaypool.sqlite3");
-                }
+                Console.WriteLine("New Config Generated. Edit the configuration and restart the bot.");
+                return;
             }
 
 

@@ -60,7 +60,9 @@ namespace SysBot.Pokemon.Discord
         private static string GetBuildTime()
         {
             var assembly = Assembly.GetEntryAssembly();
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             return File.GetLastWriteTime(assembly.Location).ToString(@"yy-MM-dd\.hh\:mm");
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
 
         public static string GetCoreDate() => GetDateOfDll("PKHeX.Core.dll");
@@ -68,8 +70,12 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetDateOfDll(string dll)
         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             var folder = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8604 // Possible null reference argument.
             var path = Path.Combine(folder, dll);
+#pragma warning restore CS8604 // Possible null reference argument.
             var date = File.GetLastWriteTime(path);
             return date.ToString(@"yy-MM-dd\.hh\:mm");
         }

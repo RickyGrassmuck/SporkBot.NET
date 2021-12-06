@@ -79,8 +79,12 @@ namespace SysBot.Base
         private void ConnectCallback(IAsyncResult ar)
         {
             // Complete the connection request.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             Socket client = (Socket)ar.AsyncState;
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             client.EndConnect(ar);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             // Signal that the connection is complete.
             connectionDone.Set();
@@ -92,8 +96,12 @@ namespace SysBot.Base
         private void DisconnectCallback(IAsyncResult ar)
         {
             // Complete the disconnect request.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             Socket client = (Socket)ar.AsyncState;
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             client.EndDisconnect(ar);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             // Signal that the disconnect is complete.
             disconnectDone.Set();

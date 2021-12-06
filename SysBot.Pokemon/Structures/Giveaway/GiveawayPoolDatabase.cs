@@ -3,16 +3,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using SysBot.Base;
 using PKHeX.Core;
-using System.IO;
 
-/*
- * TODO:
- *   1) Add description field for each entry
- *   2) Add "Status" field to allow enabling/disabling items
- *   3) We aren't going to use files at all anymore, dump that PK8 data into each entry.
- *   4) Create commands for Updating an entry, getting entry details
- *   5) No files == no reloads, get rid of all that.
- */
 namespace SysBot.Pokemon
 {
     public class GiveawayPool
@@ -48,22 +39,40 @@ namespace SysBot.Pokemon
             {
                 using var cmd = new SQLiteCommand(conn)
                 {
-                    CommandText = @"CREATE TABLE IF NOT EXISTS giveawaypool (
-                                    Id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-                                    Name TEXT NOT NULL,
-                                    Description TEXT,
-                                    Status TEXT NOT NULL,
-                                    PK8 TEXT NOT NULL, 
-                                    Tag TEXT NOT NULL, 
-                                    Uploader TEXT NOT NULL)"
+                    CommandText = @"CREATE TABLE IF NOT EXISTS pokemon_pool (
+                                    Id    INTEGER NOT NULL,
+                                    Name  TEXT NOT NULL,
+                                    Pokemon   TEXT NOT NULL,
+                                    Description   TEXT NOT NULL,
+                                    Status    TEXT NOT NULL,
+                                    PK8 TEXT NOT NULL,
+                                    Tag   TEXT NOT NULL,
+                                    Uploader  TEXT NOT NULL,
+                                    PRIMARY KEY(Id))"
 
                 };
 
                 cmd.ExecuteNonQuery();
+                
+                using var cmd2 = new SQLiteCommand(conn)
+                {
+                    CommandText = @"CREATE TABLE IF NOT EXISTS item_pool(
+                                    Id    INTEGER NOT NULL,
+                                    Name  TEXT NOT NULL,
+                                    Pokemon   TEXT NOT NULL,
+                                    Description   TEXT NOT NULL,
+                                    Status    TEXT NOT NULL,
+                                    PK8 TEXT NOT NULL,
+                                    Tag   TEXT NOT NULL,
+                                    Uploader  TEXT NOT NULL,
+                                    PRIMARY KEY(Id))"
+                };
+                cmd2.ExecuteNonQuery();
+
             }
             catch (SQLiteException e)
             {
-                LogUtil.LogInfo("Error creating Giveawaypool Table: " + e.Message, nameof(GiveawayPool));
+                LogUtil.LogInfo("Error creating Database tables Table: " + e.Message, nameof(GiveawayPool));
             }
             finally
             {
@@ -80,7 +89,7 @@ namespace SysBot.Pokemon
             {
 
                 using SQLiteCommand cmd = new SQLiteCommand(conn);
-                cmd.CommandText = "INSERT INTO giveawaypool(Name, Pokemon, Status, PK8, Tag, Uploader)" +
+                cmd.CommandText = "INSERT INTO " + entry.Pool + " (Name, Pokemon, Status, PK8, Tag, Uploader)" +
                     "VALUES (@name, @pokemon, @status, @pk8, @tag, @uploader)";
                 cmd.Prepare();
                 cmd.Parameters.AddWithValue("@name", entry.Name);
@@ -117,28 +126,43 @@ namespace SysBot.Pokemon
 
             return entryID;
         }
-        public GiveawayPoolEntry GetEntryByName(string name)
+        public GiveawayPoolEntry? GetEntry(string pool, int Id)
         {
-            GiveawayPoolEntry entry = new GiveawayPoolEntry();
             SQLiteConnection conn = NewConnection();
-
             try
             {
                 using SQLiteCommand cmd = new SQLiteCommand(conn);
-                cmd.CommandText = "SELECT * FROM giveawaypool where Name = @name";
+
                 cmd.Prepare();
-                cmd.Parameters.AddWithValue("@Name", name);
-                using SQLiteDataReader reader = cmd.ExecuteReader();
+
+                var CommandText = "SELECT * FROM " + pool + " WHERE Id = @id";
+                cmd.CommandText = CommandText;
+                cmd.Parameters.AddWithValue("@id", Id);
+                LogUtil.LogInfo(pool, "SQL");
+                LogUtil.LogInfo(cmd.CommandText, "SQL");
+                var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
+                    GiveawayPoolEntry entry = new();
                     Int32.TryParse(reader["Id"].ToString(), out var id);
                     entry.Id = id;
-                    entry.Name = reader["Name"].ToString();
-                    entry.Pokemon = reader["Pokemon"].ToString();
-                    entry.Description = reader["Description"].ToString();
-                    entry.Status = reader["Status"].ToString();
-                    entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
-                    entry.Uploader = reader["Uploader"].ToString();
+#pragma warning disable CS8601 // Possible null reference assignment.
+                    if (reader["Name"] != null)
+                        entry.Name = reader["Name"].ToString();
+                    if (reader["Tag"] != null)
+                        entry.Tag = reader["Tag"].ToString();
+                    if (reader["Status"] != null)
+                        entry.Status = reader["Status"].ToString();
+                    if (reader["PK8"] != null)
+                        entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
+                    if (reader["Pokemon"] != null)
+                        entry.Pokemon = reader["Pokemon"].ToString();
+                    if (reader["Description"] != null)
+                        entry.Description = reader["Description"].ToString();
+                    if (reader["Uploader"] != null)
+                        entry.Uploader = reader["Uploader"].ToString();
+#pragma warning restore CS8601 // Possible null reference assignment.
+                    return entry;
                 }
             }
             catch (SQLiteException e)
@@ -149,82 +173,10 @@ namespace SysBot.Pokemon
             {
                 conn.Close();
             }
-            return entry;
+            return null;
         }
-        public GiveawayPoolEntry GetEntryById(int Id)
-        {
-            GiveawayPoolEntry entry = new GiveawayPoolEntry();
-            SQLiteConnection conn = NewConnection();
 
-            try
-            {
-                using SQLiteCommand cmd = new SQLiteCommand(conn);
-                cmd.CommandText = "SELECT * FROM giveawaypool where Id = @Id";
-                cmd.Prepare();
-                cmd.Parameters.AddWithValue("@Id", Id);
-                using SQLiteDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    Int32.TryParse(reader["Id"].ToString(), out var id);
-                    entry.Id = id;
-                    entry.Name = reader["Name"].ToString();
-                    entry.Pokemon = reader["Pokemon"].ToString();
-                    entry.Description = reader["Description"].ToString();
-                    entry.Status = reader["Status"].ToString();
-                    entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
-                    entry.Tag = reader["Tag"].ToString();
-                    entry.Uploader = reader["Uploader"].ToString();
-                }
-            }
-            catch (SQLiteException e)
-            {
-                LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
-            }
-            finally
-            {
-                conn.Close();
-            }
-
-            return entry;
-        }
-        public PK8 GetEntryPK8(int Id)
-        {
-            SQLiteConnection conn = NewConnection();
-            
-            try
-            {
-                using SQLiteCommand getRow = new SQLiteCommand(conn);
-                getRow.CommandText = "SELECT PK8 FROM giveawaypool WHERE Id = @id";
-                getRow.Prepare();
-                getRow.Parameters.AddWithValue("@id", Id);
-                var reader = getRow.ExecuteScalar();
-                var encodedData = reader.ToString();
-                PK8? pk8 = Utils.B64ToPK8(encodedData);
-                if (pk8 == null)
-                {
-                    LogUtil.LogInfo("Pokemon Data not valid", nameof(GiveawayPool));
-                    return new PK8();
-                } 
-                else
-                {
-
-                    LogUtil.LogInfo("PK8 Data Loaded: " + (Species)pk8.Species, nameof(GiveawayPool));
-                    return pk8;
-
-                }
-
-            }
-            catch (SQLiteException e)
-            {
-                LogUtil.LogInfo("Error getting new entry id: " + e.Message, nameof(GiveawayPool));
-            }
-            finally
-            {
-                conn.Close();
-            }
-            return new PK8();
-        }
-        public int UpdateEntry(int entryID, string column, string newValue)
+        public int UpdateEntry(string pool, int entryID, string column, string newValue)
         {
             SQLiteConnection conn = NewConnection();
             int result = -1;
@@ -232,11 +184,12 @@ namespace SysBot.Pokemon
             {
 
                 using SQLiteCommand cmd = new SQLiteCommand(conn);
-                cmd.CommandText = "UPDATE giveawaypool "
-                                + "SET " + column + " = @" + column
+                cmd.CommandText = "UPDATE " + pool
+                                + " SET " + column + " = @" + column
                                 + " WHERE Id = @Id";
                 cmd.Prepare();
                 cmd.Parameters.AddWithValue("@Id", entryID);
+                cmd.Parameters.AddWithValue("@pool", pool);
                 cmd.Parameters.AddWithValue("@" + column, newValue);
 
                 result = cmd.ExecuteNonQuery();
@@ -253,56 +206,69 @@ namespace SysBot.Pokemon
             }
             return result;
         }
-        public List<GiveawayPoolEntry> GetPool(bool getItems = true, string status = "active")
+        public int DeleteEntry (string pool, int entryID)
         {
-            List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
+            SQLiteConnection conn = NewConnection();
+            int result = -1;
+            try
+            {
+
+                using SQLiteCommand cmd = new SQLiteCommand(conn);
+                cmd.CommandText = "DELETE FROM " + pool
+                                + " WHERE Id = @Id";
+                cmd.Prepare();
+                cmd.Parameters.AddWithValue("@Id", entryID);
+                cmd.Parameters.AddWithValue("@pool", pool);
+
+                result = cmd.ExecuteNonQuery();
+
+            }
+            catch (SQLiteException e)
+            {
+                LogUtil.LogInfo("Error deleting: " + e.Message, nameof(GiveawayPool));
+                result = 0;
+            }
+            finally
+            {
+                conn.Close();
+            }
+            return result;
+        }
+        public List<GiveawayPoolEntry> GetPool(string pool, string status = "active")
+        {
+            List<GiveawayPoolEntry> entries = new();
             SQLiteConnection conn = NewConnection();
 
             try
             {
                 using SQLiteCommand cmd = new SQLiteCommand(conn);
+                cmd.CommandText = "SELECT * FROM " + pool + " WHERE Status = @status";
                 cmd.Prepare();
-                switch (status)
-                {
-                    case "active":
-                        var CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status";
-                        if (!getItems)
-                        {
-                            CommandText += " AND Tag != 'Item'";
-                        }
-                        cmd.CommandText = CommandText;
-                        cmd.Parameters.AddWithValue("@status", status);
-                        break;
-                    case "inactive":
-                        CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE status = @status";
-                        if (!getItems)
-                        {
-                            CommandText += " AND Tag != 'Item'";
-                        }
-                        cmd.CommandText = CommandText;
-                        cmd.Parameters.AddWithValue("@status", status);
-                        break;
-                    default:
-                        CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool";
-                        if (!getItems)
-                        {
-                            CommandText += " WHERE Tag != 'Item'";
-                        }
-                        cmd.CommandText = CommandText;
-                        break;
-                }
-
+                cmd.Parameters.AddWithValue("@status", status);
+                LogUtil.LogInfo(pool, "SQL");
+                LogUtil.LogInfo(cmd.CommandText, "SQL");
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    GiveawayPoolEntry entry = new GiveawayPoolEntry();
-
+                    GiveawayPoolEntry entry = new();
                     Int32.TryParse(reader["Id"].ToString(), out var id);
                     entry.Id = id;
-                    entry.Name = reader["Name"].ToString();
-                    entry.Tag = reader["Tag"].ToString();
-                    entry.Status = reader["Status"].ToString();
-                    entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
+#pragma warning disable CS8601 // Possible null reference assignment.
+                    if (reader["Name"] != null)
+                        entry.Name = reader["Name"].ToString();
+                    if (reader["Tag"] != null)
+                        entry.Tag = reader["Tag"].ToString();
+                    if (reader["Status"] != null)
+                        entry.Status = reader["Status"].ToString();
+                    if (reader["PK8"] != null)
+                        entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
+                    if (reader["Pokemon"] != null)
+                        entry.Pokemon = reader["Pokemon"].ToString();
+                    if (reader["Description"] != null)
+                        entry.Description = reader["Description"].ToString();
+                    if (reader["Uploader"] != null)
+                        entry.Uploader = reader["Uploader"].ToString();
+#pragma warning restore CS8601 // Possible null reference assignment.
                     entries.Add(entry);
                 }
             }
@@ -316,17 +282,23 @@ namespace SysBot.Pokemon
             }
             return entries;
         }
-        public List<GiveawayPoolEntry> GetPoolByTag(string tag)
+        public List<GiveawayPoolEntry> SearchPool(string pool, string search)
         {
             List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
             SQLiteConnection conn = NewConnection();
-
+            var name = search;
+            var tag = search;
             try
             {
                 using SQLiteCommand cmd = new SQLiteCommand(conn);
+
+                cmd.CommandText = "SELECT * FROM " + pool + " WHERE Name like @name OR Tag like @tag";
                 cmd.Prepare();
-                cmd.CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE tag = @tag";
-                cmd.Parameters.AddWithValue("@tag", tag);
+                LogUtil.LogInfo(cmd.CommandText, "SQL");
+                LogUtil.LogInfo("Pool: "+pool + " Search: " + name + "/" + tag, "SQL");
+                cmd.Parameters.AddWithValue("name", name);
+                cmd.Parameters.AddWithValue("tag", tag);
+
                 using SQLiteDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
@@ -334,10 +306,22 @@ namespace SysBot.Pokemon
 
                     Int32.TryParse(reader["Id"].ToString(), out var id);
                     entry.Id = id;
-                    entry.Name = reader["Name"].ToString();
-                    entry.Tag = reader["Tag"].ToString();
-                    entry.Status = reader["Status"].ToString();
-                    entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
+#pragma warning disable CS8601 // Possible null reference assignment.
+                    if (reader["Name"] != null)
+                        entry.Name = reader["Name"].ToString();
+                    if (reader["Tag"] != null)
+                        entry.Tag = reader["Tag"].ToString();
+                    if (reader["Status"] != null)
+                        entry.Status = reader["Status"].ToString();
+                    if (reader["PK8"] != null)
+                        entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
+                    if (reader["Pokemon"] != null)
+                        entry.Pokemon = reader["Pokemon"].ToString();
+                    if (reader["Description"] != null)
+                        entry.Description = reader["Description"].ToString();
+                    if (reader["Uploader"] != null)
+                        entry.Uploader = reader["Uploader"].ToString();
+#pragma warning restore CS8601 // Possible null reference assignment.
                     entries.Add(entry);
                 }
             }
@@ -351,44 +335,6 @@ namespace SysBot.Pokemon
             }
             return entries;
         }
-        public List<GiveawayPoolEntry> SearchPool(string search)
-        {
-            List<GiveawayPoolEntry> entries = new List<GiveawayPoolEntry>();
-            SQLiteConnection conn = NewConnection();
-
-            try
-            {
-                using SQLiteCommand cmd = new SQLiteCommand(conn);
-                cmd.Prepare();
-                cmd.CommandText = "SELECT Id,Name,Tag,Status,PK8 FROM giveawaypool WHERE Name like @name OR Tag like @tag";
-                cmd.Parameters.AddWithValue("name", search);
-                cmd.Parameters.AddWithValue("tag", search);
-
-                using SQLiteDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    GiveawayPoolEntry entry = new GiveawayPoolEntry();
-
-                    Int32.TryParse(reader["Id"].ToString(), out var id);
-                    entry.Id = id;
-                    entry.Name = reader["Name"].ToString();
-                    entry.Tag = reader["Tag"].ToString();
-                    entry.Status = reader["Status"].ToString();
-                    entry.PK8 = Utils.B64ToPK8(reader["PK8"].ToString());
-                    entries.Add(entry);
-                }
-            }
-            catch (SQLiteException e)
-            {
-                LogUtil.LogInfo("Error querying database: " + e.Message, nameof(GiveawayPool));
-            }
-            finally
-            {
-                conn.Close();
-            }
-            return entries;
-        }
-
         public class Utils
         {
             public static string PK8ToB64(PK8? pk8)
