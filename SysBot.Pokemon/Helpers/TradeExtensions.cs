@@ -124,14 +124,14 @@ namespace SysBot.Pokemon
         public static void RngRoutine(PKM pkm)
         {
             var rng = new Random();
-            var troublesomeAltForms = pkm.Species == (int)Species.Raichu || pkm.Species == (int)Species.Giratina || pkm.Species == (int)Species.Silvally ||
+            var troublesomeForms = pkm.Species == (int)Species.Raichu || pkm.Species == (int)Species.Giratina || pkm.Species == (int)Species.Silvally ||
                                       pkm.Species == (int)Species.Genesect || pkm.Species == (int)Species.Articuno || pkm.Species == (int)Species.Zapdos || pkm.Species == (int)Species.Moltres;
 
-            pkm.AltForm = pkm.Species == (int)Species.Silvally || pkm.Species == (int)Species.Genesect || pkm.Species == (int)Species.Giratina ? rng.Next(pkm.PersonalInfo.FormeCount) : pkm.AltForm;
-            if (AltFormInfo.IsBattleOnlyForm(pkm.Species, pkm.AltForm, pkm.Format))
-                pkm.AltForm = AltFormInfo.GetOutOfBattleForm(pkm.Species, pkm.AltForm, pkm.Format);
-            else if (AltFormInfo.IsFusedForm(pkm.Species, pkm.AltForm, pkm.Format))
-                pkm.AltForm = 0;
+            pkm.Form = pkm.Species == (int)Species.Silvally || pkm.Species == (int)Species.Genesect || pkm.Species == (int)Species.Giratina ? rng.Next(pkm.PersonalInfo.FormCount) : pkm.Form;
+            if (FormInfo.IsBattleOnlyForm(pkm.Species, pkm.Form, pkm.Format))
+                pkm.Form = FormInfo.GetOutOfBattleForm(pkm.Species, pkm.Form, pkm.Format);
+            else if (FormInfo.IsFusedForm(pkm.Species, pkm.Form, pkm.Format))
+                pkm.Form = 0;
 
             if (pkm.Species == (int)Species.Alcremie)
             {
@@ -141,20 +141,20 @@ namespace SysBot.Pokemon
                 pkm = tempPkm ?? pkm;
             }
 
-            if (pkm.AltForm > 0 && troublesomeAltForms)
+            if (pkm.Form > 0 && troublesomeForms)
             {
                 switch (pkm.Species)
                 {
-                    case 26: pkm.Met_Location = 162; pkm.Met_Level = 25; pkm.EggMetDate = null; pkm.Egg_Day = 0; pkm.Egg_Location = 0; pkm.Egg_Month = 0; pkm.Egg_Year = 0; pkm.EncounterType = 0; break;
+                    case 26: pkm.Met_Location = 162; pkm.Met_Level = 25; pkm.EggMetDate = null; pkm.Egg_Day = 0; pkm.Egg_Location = 0; pkm.Egg_Month = 0; pkm.Egg_Year = 0; break;
                     case 144: pkm.Met_Location = 208; pkm.SetIsShiny(false); break;
                     case 145: pkm.Met_Location = 122; pkm.SetIsShiny(false); break;
                     case 146: pkm.Met_Location = 164; pkm.SetIsShiny(false); break;
                     case 487: pkm.HeldItem = 112; break;
-                    case 649: pkm.HeldItem = GenesectDrives[pkm.AltForm]; break;
-                    case 773: pkm.HeldItem = SilvallyMemory[pkm.AltForm]; break;
+                    case 649: pkm.HeldItem = GenesectDrives[pkm.Form]; break;
+                    case 773: pkm.HeldItem = SilvallyMemory[pkm.Form]; break;
                 };
             }
-            else if (pkm.AltForm == 0 && !pkm.FatefulEncounter && troublesomeAltForms)
+            else if (pkm.Form == 0 && !pkm.FatefulEncounter && troublesomeForms)
             {
                 switch (pkm.Species)
                 {
@@ -171,8 +171,8 @@ namespace SysBot.Pokemon
                 pkm.HeldItem = 229;
 
             pkm.Nature = pkm.FatefulEncounter ? pkm.Nature : 
-                pkm.Species == (int)Species.Toxtricity && pkm.AltForm > 0 ? LowKey[rng.Next(LowKey.Length)] : 
-                pkm.Species == (int)Species.Toxtricity && pkm.AltForm == 0 ? Amped[rng.Next(Amped.Length)] : rng.Next(25);
+                pkm.Species == (int)Species.Toxtricity && pkm.Form > 0 ? LowKey[rng.Next(LowKey.Length)] : 
+                pkm.Species == (int)Species.Toxtricity && pkm.Form == 0 ? Amped[rng.Next(Amped.Length)] : rng.Next(25);
             pkm.StatNature = pkm.Nature;
             pkm.IVs = pkm.FatefulEncounter ? pkm.IVs : pkm.SetRandomIVs(5);
             pkm.ClearHyperTraining();
@@ -185,7 +185,7 @@ namespace SysBot.Pokemon
             if (!pkm.FatefulEncounter)
                 pkm.SetAbilityIndex(Legends.Contains(pkm.Species) || UBs.Contains(pkm.Species) ? 0 : pkm.Met_Location == 244 || pkm.Met_Location == 30001 || GalarFossils.Contains(pkm.Species) ? 2 : rng.Next(3));
 
-            if (pkm.Species == (int)Species.Exeggutor && pkm.AltForm > 0 && pkm.Met_Location == 164)
+            if (pkm.Species == (int)Species.Exeggutor && pkm.Form > 0 && pkm.Met_Location == 164)
             {
                 pkm.Ball = 4;
                 pkm.SetAbilityIndex(2);
@@ -240,14 +240,14 @@ namespace SysBot.Pokemon
             var sav = AutoLegalityWrapper.GetTrainerInfo(8);
             var pkm = sav.GetLegal(template, out _);
 
-            if (!specificEgg && pkm.PersonalInfo.HasFormes && pkm.Species != (int)Species.Sinistea && pkm.Species != (int)Species.Indeedee)
-                pkm.AltForm = rng.Next(pkm.PersonalInfo.FormeCount);
+            if (!specificEgg && pkm.PersonalInfo.HasForms && pkm.Species != (int)Species.Sinistea && pkm.Species != (int)Species.Indeedee)
+                pkm.Form = rng.Next(pkm.PersonalInfo.FormCount);
 
             if (pkm.Species == (int)Species.Rotom)
-                pkm.AltForm = 0;
+                pkm.Form = 0;
 
-            if (AltFormInfo.IsBattleOnlyForm(pkm.Species, pkm.AltForm, pkm.Format))
-                pkm.AltForm = AltFormInfo.GetOutOfBattleForm(pkm.Species, pkm.AltForm, pkm.Format);
+            if (FormInfo.IsBattleOnlyForm(pkm.Species, pkm.Form, pkm.Format))
+                pkm.Form = FormInfo.GetOutOfBattleForm(pkm.Species, pkm.Form, pkm.Format);
 
             if (ballRngDC == 1)
                 pkm.Ball = ball1;
@@ -400,7 +400,7 @@ namespace SysBot.Pokemon
             }
 
             var content = File.ReadAllText("EncounterLog.txt").Split('\n').ToList();
-            var form = FormOutput(pk.Species, pk.AltForm, out _);
+            var form = FormOutput(pk.Species, pk.Form, out _);
             var speciesName = SpeciesName.GetSpeciesNameGeneration(pk.Species, pk.Language, 8) + (pk.Species == (int)Species.Sinistea ? "" : form);
             var index = content.FindIndex(2, x => x.Contains(speciesName));
             var split = index != -1 ? content[index].Split('_') : new string[] { };
@@ -409,11 +409,11 @@ namespace SysBot.Pokemon
             if (index == -1 && !speciesName.Contains("Sinistea"))
                 content.Add($"{speciesName}_1_★{(pk.IsShiny ? 1 : 0)}");
             else if (index == -1 && speciesName.Contains("Sinistea"))
-                content.Add($"{speciesName}_1_{(pk.AltForm > 0 ? 1 : 0)}_★{(pk.IsShiny ? 1 : 0)}");
+                content.Add($"{speciesName}_1_{(pk.Form > 0 ? 1 : 0)}_★{(pk.IsShiny ? 1 : 0)}");
             else if (index != -1 && !speciesName.Contains("Sinistea"))
                 content[index] = $"{split[0]}_{int.Parse(split[1]) + 1}_{(pk.IsShiny ? "★" + (int.Parse(split[2].Replace("★", "")) + 1).ToString() : split[2])}";
             else if (index != -1 && speciesName.Contains("Sinistea"))
-                content[index] = $"{split[0]}_{int.Parse(split[1]) + 1}_{(pk.AltForm > 0 ? (int.Parse(split[2]) + 1).ToString() : split[2])}_{(pk.IsShiny ? "★" + (int.Parse(split[3].Replace("★", "")) + 1).ToString() : split[3])}";
+                content[index] = $"{split[0]}_{int.Parse(split[1]) + 1}_{(pk.Form > 0 ? (int.Parse(split[2]) + 1).ToString() : split[2])}_{(pk.IsShiny ? "★" + (int.Parse(split[3].Replace("★", "")) + 1).ToString() : split[3])}";
 
             content[0] = "Total: " + $"{int.Parse(splitTotal[0].Split(':')[1].Replace(" Pokémon", "")) + 1} Pokémon, " +
                 (pk.IsEgg ? $"{int.Parse(splitTotal[1].Replace(" Eggs", "")) + 1} Eggs, " : splitTotal[1].Trim() + ", ") +

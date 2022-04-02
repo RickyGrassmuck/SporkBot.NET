@@ -35,7 +35,7 @@ namespace SysBot.Pokemon
             return new PK8(data);
         }
 
-        public async Task SetBoxPokemon(PK8 pkm, int box, int slot, CancellationToken token, SAV8? sav = null)
+        public async Task SetBoxPokemon(PK8 pkm, int box, int slot, CancellationToken token, SAV8SWSH? sav = null)
         {
             if (sav != null)
             {
@@ -178,7 +178,7 @@ namespace SysBot.Pokemon
         {
             var ofs = GetTrainerNameOffset(tradeMethod);
             var data = await Connection.ReadBytesAsync(ofs, 26, Config.ConnectionType, token).ConfigureAwait(false);
-            return StringConverter.GetString7(data, 0, 26);
+            return StringConverter.GetString(data,7,false, false);
         }
 
         public async Task<bool> IsGameConnectedToYComm(CancellationToken token)

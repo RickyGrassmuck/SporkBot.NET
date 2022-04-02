@@ -9,5 +9,6 @@
         Dump,
         Giveaway,
         GiveawayUpload,
+        LegalityCheck,
     }
 }

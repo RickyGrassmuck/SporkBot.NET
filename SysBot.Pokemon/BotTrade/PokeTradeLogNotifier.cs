@@ -41,7 +41,10 @@ namespace SysBot.Pokemon
                 msg += ", " + string.Join(", ", message.Details.Select(z => $"{z.Heading}: {z.Detail}"));
             LogUtil.LogInfo(msg, routine.Connection.Name);
         }
-
+        public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, LegalityAnalysis la)
+        {
+            LogUtil.LogInfo($"Notifying {info.Trainer.TrainerName} about their legality check results: {la.Report(false)}", routine.Connection.Name);
+        }
         public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, T result, string message)
         {
             LogUtil.LogInfo($"Notifying {info.Trainer.TrainerName} about their {(Species)result.Species}", routine.Connection.Name);

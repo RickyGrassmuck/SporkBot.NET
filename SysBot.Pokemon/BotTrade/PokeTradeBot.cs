@@ -263,7 +263,20 @@ namespace SysBot.Pokemon
 
                 return PokeTradeResult.TrainerTooSlow;
             }
-
+            if (poke.Type == PokeTradeType.LegalityCheck)
+            {
+                // Immediately exit, we aren't trading anything.
+                return await EndLegalityCheckTradeAsync(poke, pk, token).ConfigureAwait(false);
+            }
+            //if (poke.Type == PokeTradeType.LegalityCheck)
+            //{
+            //    var clone = (PK8)pk.Clone();
+            //    ReplyWithLegalityCheckResults(poke, clone);
+            //    var laInit = new LegalityAnalysis(clone);
+            //    poke.SendNotification(this, pk, laInit.Report(true));
+            //    await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
+            //    return PokeTradeResult.Aborted;
+            //}
             if (poke.Type == PokeTradeType.Seed)
             {
                 // Immediately exit, we aren't trading anything.
@@ -292,7 +305,7 @@ namespace SysBot.Pokemon
                         DumpPokemon(DumpSetting.DumpFolder, "hacked", clone);
 
                     poke.SendNotification(this, $"```fix\nShown Pokémon is invalid. Attempting to regenerate... \n{laInit.Report()}```");
-                    clone = (PK8)AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(ShowdownSet.GetShowdownText(clone) + extraInfo)), out _);
+                    clone = (PK8)AutoLegalityWrapper.GetTrainerInfo(8).GetLegal(AutoLegalityWrapper.GetTemplate(new ShowdownSet(clone + extraInfo)), out _);
                     var laRegen = new LegalityAnalysis(clone);
                     if (laRegen.Valid)
                         poke.SendNotification(this, $"```fix\nRegenerated and legalized your {(Species)clone.Species}!```");
@@ -386,6 +399,7 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
+    
 
             await Click(A, 3_000, token).ConfigureAwait(false);
             for (int i = 0; i < 5; i++)
@@ -659,7 +673,34 @@ namespace SysBot.Pokemon
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
             return PokeTradeResult.Success;
         }
+        private async Task<PokeTradeResult> EndLegalityCheckTradeAsync(PokeTradeDetail<PK8> detail, PK8 pk, CancellationToken token)
+        {
+            await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
 
+            detail.TradeFinished(this, pk);
+
+            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+                DumpPokemon(DumpSetting.DumpFolder, "seed", pk);
+
+            // Send results from separate thread; the bot doesn't need to wait for things to be calculated.
+#pragma warning disable 4014
+            Task.Run(() =>
+            {
+                try
+                {
+                    ReplyWithLegalityCheckResults(detail, pk);
+                }
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
+                {
+                    detail.SendNotification(this, $"Unable to perform legality check: {ex.Message}\r\n{ex.StackTrace}");
+                }
+            }, token);
+#pragma warning restore 4014
+
+            return PokeTradeResult.Success;
+        }
         private async Task<PokeTradeResult> EndSeedCheckTradeAsync(PokeTradeDetail<PK8> detail, PK8 pk, CancellationToken token)
         {
             await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
@@ -690,7 +731,13 @@ namespace SysBot.Pokemon
 
             return PokeTradeResult.Success;
         }
-
+        private void ReplyWithLegalityCheckResults(PokeTradeDetail<PK8> detail, PK8 result)
+        {
+            detail.SendNotification(this, "Performing Legality Analysis");
+            var la = new LegalityAnalysis(result);
+            detail.SendNotification(this, la);
+            LogUtil.LogInfo("Legality Check Completed.", "PokeTradeBot");
+        }
         private void ReplyWithSeedCheckResults(PokeTradeDetail<PK8> detail, PK8 result)
         {
             detail.SendNotification(this, "Calculating your seed(s)...");

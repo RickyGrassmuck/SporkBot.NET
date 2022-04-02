@@ -2,18 +2,25 @@
 using Discord.Commands;
 using PKHeX.Core;
 using System.Threading.Tasks;
+using SysBot.Base;
 
 namespace SysBot.Pokemon.Discord
 {
     public class LegalityCheckModule : ModuleBase<SocketCommandContext>
     {
+        private static TradeQueueInfo<PK8> Info => SysCordInstance.Self.Hub.Queues.Info;
+
         [Command("lc"), Alias("check", "validate", "verify")]
         [Summary("Verifies the attachment for legality.")]
         public async Task LegalityCheck()
         {
-            var attachments = Context.Message.Attachments;
-            foreach (var att in attachments)
-                await LegalityCheck(att, false).ConfigureAwait(false);
+            var code = Info.GetRandomTradeCode();
+            GiveawayPoolEntry? entry;
+            entry = new GiveawayPoolEntry();
+
+            LogUtil.LogInfo("Starting Legality check", "Discord");
+            var sig = Context.User.GetFavor();
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.LinkTrade, PokeTradeType.LegalityCheck, Context.User, entry).ConfigureAwait(false);
         }
 
         [Command("lcv"), Alias("verbose")]

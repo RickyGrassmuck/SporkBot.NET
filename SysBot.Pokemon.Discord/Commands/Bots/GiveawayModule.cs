@@ -180,10 +180,10 @@ namespace SysBot.Pokemon.Discord
                     return;
                 }
             }
-           
+
             var sig = Context.User.GetFavor();
             LogUtil.LogInfo($"Sending: \"{entry.Name}\" To: \"{Context.User.Username}\"", "DISCORD-COMMAND");
-            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User, entry).ConfigureAwait(false);
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, entry.PK8, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User, entry).ConfigureAwait(false);
         }
         
         [Command("giveawayitem")]
@@ -215,7 +215,7 @@ namespace SysBot.Pokemon.Discord
             }
            
             var sig = Context.User.GetFavor();
-            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User, entry).ConfigureAwait(false);
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, entry.PK8, PokeRoutineType.LinkTrade, PokeTradeType.Giveaway, Context.User, entry).ConfigureAwait(false);
         }
 
         [Command("update_entry_name")]
@@ -539,7 +539,7 @@ namespace SysBot.Pokemon.Discord
         {
             bool md = false;
             bool fd = false;
-            if (TradeExtensions.GenderDependent.Contains(pkm.Species) && !canGmax && pkm.AltForm == 0)
+            if (TradeExtensions.GenderDependent.Contains(pkm.Species) && !canGmax && pkm.Form == 0)
             {
                 if (pkm.Gender == 0)
                     md = true;
@@ -548,7 +548,7 @@ namespace SysBot.Pokemon.Discord
 
             var baseLink = "https://projectpokemon.org/images/sprites-models/homeimg/poke_capture_0001_000_mf_n_00000000_f_n.png".Split('_');
             baseLink[2] = pkm.Species < 10 ? $"000{pkm.Species}" : pkm.Species < 100 && pkm.Species > 9 ? $"00{pkm.Species}" : $"0{pkm.Species}";
-            baseLink[3] = pkm.AltForm < 10 ? $"00{pkm.AltForm}" : $"0{pkm.AltForm}";
+            baseLink[3] = pkm.Form < 10 ? $"00{pkm.Form}" : $"0{pkm.Form}";
             baseLink[4] = pkm.PersonalInfo.OnlyFemale ? "fo" : pkm.PersonalInfo.OnlyMale ? "mo" : pkm.PersonalInfo.Genderless ? "uk" : fd ? "fd" : md ? "md" : "mf";
             baseLink[5] = canGmax ? "g" : "n";
             baseLink[6] = "0000000" + (pkm.Species == (int)Species.Alcremie ? alcremieDeco : 0);

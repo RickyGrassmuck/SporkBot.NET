@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using PKHeX.Core;
+using SysBot.Base;
 using System;
 using System.Linq;
 
@@ -80,7 +81,23 @@ namespace SysBot.Pokemon.Discord
             if (result.Species != 0 && (Hub.Config.Discord.ReturnPK8s || info.Type == PokeTradeType.Dump))
                 Trader.SendPKMAsync(result, message).ConfigureAwait(false);
         }
+        public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, LegalityAnalysis la)
+        {
+            var builder = new EmbedBuilder
+            {
+                Color = la.Valid ? Color.Green : Color.Red,
+                Description = $"Legality Report for {info.TradeData.Species}:"
+            };
 
+            builder.AddField(x =>
+            {
+                x.Name = la.Valid ? "Valid" : "Invalid";
+                x.Value = la.Report(true);
+                x.IsInline = false;
+            });
+            LogUtil.LogInfo("We're running the LC!", "Discord");
+            Trader.SendMessageAsync(embed: builder.Build()).ConfigureAwait(false);
+        }
         private void SendNotificationZ3(SeedSearchResult r)
         {
             var lines = r.ToString();

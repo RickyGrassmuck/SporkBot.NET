@@ -67,7 +67,7 @@ namespace SysBot.Pokemon.Discord
         public static string GetFormattedShowdownText(PKM pkm)
         {
             var newShowdown = new List<string>();
-            var showdown = ShowdownSet.GetShowdownText(pkm);
+            var showdown = new ShowdownSet(pkm).Text;
             foreach (var line in showdown.Split('\n'))
                 newShowdown.Add(line);
 

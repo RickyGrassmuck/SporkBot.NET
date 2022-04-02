@@ -10,7 +10,8 @@ namespace SysBot.Pokemon
         {
             var ec = pkm.EncryptionConstant;
             var pid = pkm.PID;
-            var IVs = pkm.IVs.Length == 0 ? GetBlankIVTemplate() : PKX.ReorderSpeedLast((int[])pkm.IVs.Clone());
+            PKX.ReorderSpeedLast((int[])pkm.IVs);
+            var IVs = pkm.IVs.Length == 0 ? GetBlankIVTemplate() : (int[])pkm.IVs;
             if (settings.ShowAllZ3Results)
             {
                 var matches = Z3Search.GetAllSeeds(ec, pid, IVs, settings.ResultDisplayMode);

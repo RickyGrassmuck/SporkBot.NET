@@ -89,7 +89,7 @@ namespace SysBot.Pokemon.Discord
 
             var pokeName = "";
             if (t == PokeTradeType.Specific && pk8.Species != 0)
-                pokeName = $" Receiving: {(hub.Config.Trade.ItemMuleSpecies == (Species)pk8.Species && pk8.HeldItem != 0 ? $"{(Species)pk8.Species + " (" + ShowdownSet.GetShowdownText(pk8).Split('@','\n')[1].Trim() + ")"}" : $"{(Species)pk8.Species}")}.";
+                pokeName = $" Receiving: {(hub.Config.Trade.ItemMuleSpecies == (Species)pk8.Species && pk8.HeldItem != 0 ? $"{(Species)pk8.Species + " (" + new ShowdownSet(pk8).Text.Split('@','\n')[1].Trim() + ")"}" : $"{(Species)pk8.Species}")}.";
             msg = $"{user.Mention} - Added to the {type} queue{ticketID}. Current Position: {position.Position}.{pokeName}";
 
             var botct = Info.Hub.Bots.Count;

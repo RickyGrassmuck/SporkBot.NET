@@ -4,13 +4,12 @@ using Newtonsoft.Json;
 using PKHeX.Core;
 using SysBot.Base;
 using System.Collections.Generic;
-
 namespace SysBot.Pokemon.ConsoleApp
 {
     public class Program
     {
         private static readonly string WorkingDirectory = AppContext.BaseDirectory;
-        private const string ConfigPath = "config.json";
+        private const string ConfigFileName = "config.json";
 
         private static void CreateNewConfig(PokeTradeHubConfig hub)
         {
@@ -32,16 +31,22 @@ namespace SysBot.Pokemon.ConsoleApp
                 Hub = hub,
             };
             var lines = JsonConvert.SerializeObject(cfg);
-            File.WriteAllText(ConfigPath, lines);
+            File.WriteAllText(ConfigFileName, lines);
         }
 
         private static void Main(string[] args)
         {
+            String ConfigPath;
             Console.WriteLine("Starting up...");
             PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
 
-            if (args.Length > 1)
-                Console.WriteLine("This program does not support command line arguments.");
+            if (args.Length > 0)
+            {
+                ConfigPath = args[0];
+            } else
+            {
+                ConfigPath = ConfigFileName;
+            }
 
             if (!File.Exists(ConfigPath)) {
                 var hub = new PokeTradeHubConfig();
