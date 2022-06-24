@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>net6.0-windows;net5.0-windows;net47;</TargetFrameworks>
     <UseWindowsForms>true</UseWindowsForms>
     <PackageId>SysBot.Pokemon.WinForms</PackageId>
     <Company>Project Pokémon</Company>
@@ -15,7 +15,7 @@
     <LangVersion>9</LangVersion>
     <Version>01.00.00</Version>
     <Nullable>enable</Nullable>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;x86;AnyCPU</Platforms>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
 
@@ -32,8 +32,6 @@
   <ItemGroup>
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Discord\SysBot.Pokemon.Discord.csproj" />
-    <ProjectReference Include="..\SysBot.Pokemon.Twitch\SysBot.Pokemon.Twitch.csproj" />
-    <ProjectReference Include="..\SysBot.Pokemon.YouTube\SysBot.Pokemon.YouTube.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Z3\SysBot.Pokemon.Z3.csproj" />
   </ItemGroup>

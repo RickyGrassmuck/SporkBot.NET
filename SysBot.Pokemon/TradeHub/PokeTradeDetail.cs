@@ -20,6 +20,8 @@ namespace SysBot.Pokemon
         /// <summary> Data to be traded </summary>
         public TPoke TradeData;
 
+        public GiveawayPoolEntry PoolEntry;
+
         /// <summary> Trainer details </summary>
         public readonly PokeTradeTrainerInfo Trainer;
 
@@ -43,11 +45,12 @@ namespace SysBot.Pokemon
         /// <summary> Indicates if the trade data is currently being traded. </summary>
         public bool IsProcessing;
 
-        public PokeTradeDetail(TPoke pkm, PokeTradeTrainerInfo info, IPokeTradeNotifier<TPoke> notifier, PokeTradeType type, int code, bool favored = false)
+        public PokeTradeDetail(TPoke pkm, PokeTradeTrainerInfo info, GiveawayPoolEntry poolEntry, IPokeTradeNotifier<TPoke> notifier, PokeTradeType type, int code, bool favored = false)
         {
             ID = Interlocked.Increment(ref CreatedCount) % 3000;
             Code = code;
             TradeData = pkm;
+            PoolEntry = poolEntry;
             Trainer = info;
             Notifier = notifier;
             Type = type;

@@ -31,6 +31,12 @@ namespace SysBot.Pokemon
         private readonly IDumper DumpSetting;
 
         /// <summary>
+        /// Settings related to Giveaways
+        /// </summary>
+        /// <remarks>If null, will skip dumping.</remarks>
+        private readonly IGiveaway GiveawaySetting;
+
+        /// <summary>
         /// Synchronized start for multiple bots.
         /// </summary>
         public bool ShouldWaitAtBarrier { get; private set; }
@@ -49,6 +55,7 @@ namespace SysBot.Pokemon
             TradeSettings = hub.Config.Trade;
             AbuseSettings = hub.Config.TradeAbuse;
             DumpSetting = hub.Config.Folder;
+            GiveawaySetting = hub.Config.Giveaway;
         }
 
         public override async Task MainLoop(CancellationToken token)
@@ -339,6 +346,9 @@ namespace SysBot.Pokemon
 
             if (poke.Type == PokeTradeType.Dump)
                 return await ProcessDumpTradeAsync(poke, token).ConfigureAwait(false);
+
+            if (poke.Type == PokeTradeType.GiveawayUpload)
+                return await ProcessGiveawayUploadAsync(poke, token).ConfigureAwait(false);
 
             // Wait for User Input...
             var offered = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 25_000, 1_000, BoxFormatSlotSize, token).ConfigureAwait(false);
@@ -729,7 +739,56 @@ namespace SysBot.Pokemon
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
             return PokeTradeResult.Success;
         }
+        private async Task<PokeTradeResult> ProcessGiveawayUploadAsync(PokeTradeDetail<PK8> detail, CancellationToken token)
+        {
+            int ctr = 0;
+            var time = TimeSpan.FromSeconds(Hub.Config.Trade.MaxDumpTradeTime);
+            var start = DateTime.Now;
+            var pkprev = new PK8();
+            var poolEntry = detail.PoolEntry;
 
+            while (ctr < 1 && DateTime.Now - start < time)
+            {
+                var pk = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 0_500, BoxFormatSlotSize, token).ConfigureAwait(false);
+                if (pk == null || pk.Species < 1 || !pk.ChecksumValid || SearchUtil.HashByDetails(pk) == SearchUtil.HashByDetails(pkprev))
+                    continue;
+
+                // Save the new Pokémon for comparison next round.
+                pkprev = pk;
+                poolEntry.PK8 = pk;
+                poolEntry.Pokemon = SpeciesName.GetSpeciesName(pk.Species, 2);
+
+                if (Hub.Config.Legality.VerifyLegality)
+                {
+                    LogUtil.LogInfo($"Performing legality check on {poolEntry.Pokemon}", "PokeTradeBot.GiveawayUpload");
+                    var la = new LegalityAnalysis(poolEntry.PK8);
+                    var verbose = la.Report(true);
+                    LogUtil.LogInfo($"Shown Pokémon is {(la.Valid ? "Valid" : "Invalid")}.", "PokeTradeBot.GiveawayUpload");
+                    detail.SendNotification(this, pk, $"Pokémon sent is {(la.Valid ? "Valid" : "Invalid")}.");
+                    detail.SendNotification(this, pk, verbose);
+                    if (!la.Valid)
+                    {
+                        detail.SendNotification(this, pk, $"Show a different pokemon to continue or exit the trade to end.");
+                        continue;
+                    }
+                }
+                LogUtil.LogInfo("Creating new database entry", "PokeTradeBot.GiveawayUpload");
+                Hub.GiveawayPoolDatabase.NewEntry(poolEntry);
+                if (Hub.Config.Discord.ReturnPKMs)
+                    detail.SendNotification(this, pk, "Here's what you showed me!");
+
+                ctr++;
+            }
+
+            LogUtil.LogInfo($"Ended Giveaway pool upload", "PokeTradeBot.GiveawayUpload");
+            await ExitSeedCheckTrade(Hub.Config, token).ConfigureAwait(false);
+            if (ctr == 0)
+                return PokeTradeResult.TrainerTooSlow;
+
+            detail.Notifier.SendNotification(this, detail, $"Finished uploading Pokémon to the Giveaway Pool.");
+            detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank pk8
+            return PokeTradeResult.Success;
+        }
         private async Task<PokeTradeResult> PerformSurpriseTrade(SAV8SWSH sav, PK8 pkm, CancellationToken token)
         {
             // General Bot Strategy:

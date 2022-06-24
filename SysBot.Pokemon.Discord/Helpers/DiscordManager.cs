@@ -26,6 +26,8 @@ namespace SysBot.Pokemon.Discord
         public RemoteControlAccessList RolesFixOT => Config.RoleCanFixOT;
         public RemoteControlAccessList RolesTradeCord => Config.RoleCanTradeCord;
         public RemoteControlAccessList RolesGiveaway => Config.RoleCanGiveaway;
+        public RemoteControlAccessList RolesGiveawayUploader => Config.RoleCanGiveawayUpload;
+
         public RemoteControlAccessList RolesSupportTrade => Config.RoleCanSupportTrade;
 
         public bool CanUseSudo(ulong uid) => SudoDiscord.Contains(uid);
@@ -66,6 +68,7 @@ namespace SysBot.Pokemon.Discord
             nameof(RolesFixOT) => RolesFixOT,
             nameof(RolesTradeCord) => RolesTradeCord,
             nameof(RolesGiveaway) => RolesGiveaway,
+            nameof(RolesGiveawayUploader) => RolesGiveawayUploader,
             nameof(RolesSupportTrade) => RolesSupportTrade,
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };

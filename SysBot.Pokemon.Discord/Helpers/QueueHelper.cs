@@ -10,8 +10,16 @@ namespace SysBot.Pokemon.Discord
     public static class QueueHelper<T> where T : PKM, new()
     {
         private const uint MaxTradeCode = 9999_9999;
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, int catchID = 0)
+        {
+            await AddToQueueAsync(context, code, trainer, sig, trade, routine, type, null, catchID).ConfigureAwait(false);
+        }
 
-        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader, int catchID = 0)
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, GiveawayPoolEntry poolEntry)
+        {
+            await AddToQueueAsync(context, code, trainer, sig, trade, routine, type, poolEntry, 0).ConfigureAwait(false);
+        }
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, GiveawayPoolEntry? poolEntry, int catchID = 0)
         {
             if ((uint)code > MaxTradeCode)
             {
@@ -19,18 +27,22 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
+            if (poolEntry == null)
+            {
+                poolEntry = new GiveawayPoolEntry();
+            }
             try
             {
                 const string helper = "I've added you to the queue! I'll message you here when your trade is starting.";
-                IUserMessage test = await trader.SendMessageAsync(helper).ConfigureAwait(false);
+                IUserMessage test = await context.User.SendMessageAsync(helper).ConfigureAwait(false);
 
                 // Try adding
-                var result = AddToTradeQueue(context, trade, code, trainer, sig, routine, type, trader, out var msg, catchID);
+                var result = AddToTradeQueue(context, trade, code, trainer, sig, routine, type, out var msg, poolEntry, catchID);
 
                 // Notify in channel
                 await context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
                 // Notify in PM to mirror what is said in the channel.
-                await trader.SendMessageAsync($"{msg}\nYour trade code will be **{code:0000 0000}**.").ConfigureAwait(false);
+                await context.User.SendMessageAsync($"{msg}\nYour trade code will be **{code:0000 0000}**.").ConfigureAwait(false);
 
                 // Clean Up
                 if (result)
@@ -47,24 +59,19 @@ namespace SysBot.Pokemon.Discord
             }
             catch (HttpException ex)
             {
-                await HandleDiscordExceptionAsync(context, trader, ex).ConfigureAwait(false);
+                await HandleDiscordExceptionAsync(context, context.User, ex).ConfigureAwait(false);
             }
         }
 
-        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, int catchID = 0)
+        private static bool AddToTradeQueue(SocketCommandContext context, T pk, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, out string msg, GiveawayPoolEntry poolEntry, int catchID = 0)
         {
-            await AddToQueueAsync(context, code, trainer, sig, trade, routine, type, context.User, catchID).ConfigureAwait(false);
-        }
-
-        private static bool AddToTradeQueue(SocketCommandContext context, T pk, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg, int catchID = 0)
-        {
-            var user = trader;
+            var user = context.User;
             var userID = user.Id;
             var name = user.Username;
 
             var trainer = new PokeTradeTrainerInfo(trainerName, userID);
             var notifier = new DiscordTradeNotifier<T>(pk, trainer, code, user);
-            var detail = new PokeTradeDetail<T>(pk, trainer, notifier, t, code, sig == RequestSignificance.Favored);
+            var detail = new PokeTradeDetail<T>(pk, trainer, poolEntry, notifier, t, code, sig == RequestSignificance.Favored);
             var trade = new TradeEntry<T>(detail, userID, type, name);
 
             var hub = SysCord<T>.Runner.Hub;
@@ -78,7 +85,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             if (detail.Type == PokeTradeType.TradeCord)
-                TradeCordHelper<T>.TradeCordTrades.Add(trader.Id, catchID);
+                TradeCordHelper<T>.TradeCordTrades.Add(context.User.Id, catchID);
 
             var position = Info.CheckPosition(userID, type);
 

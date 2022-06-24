@@ -68,7 +68,8 @@ namespace SysBot.Pokemon
 
         [Category(Roles), Description("Users with this role are allowed to use Giveaway.")]
         public RemoteControlAccessList RoleCanGiveaway { get; set; } = new() { AllowIfEmpty = false };
-
+        [Category(Roles), Description("Users with this role are allowed to use Giveaway.")]
+        public RemoteControlAccessList RoleCanGiveawayUpload { get; set; } = new() { AllowIfEmpty = false };
         // Operation
 
         [Category(Roles), Description("Users with this role are allowed to join the queue with a better position.")]

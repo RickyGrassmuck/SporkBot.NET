@@ -29,6 +29,12 @@ namespace SysBot.Pokemon
         public static readonly int[] ShinyLock = {  (int)Species.Victini, (int)Species.Keldeo, (int)Species.Volcanion, (int)Species.Cosmog, (int)Species.Cosmoem, (int)Species.Magearna, (int)Species.Marshadow, (int)Species.Eternatus,
                                                     (int)Species.Kubfu, (int)Species.Urshifu, (int)Species.Zarude, (int)Species.Glastrier, (int)Species.Spectrier, (int)Species.Calyrex };
 
+        public static int[] GenderDependent = { 3, 12, 19, 20, 25, 26, 41, 42, 44, 45, 64, 65, 84, 85, 97, 111, 112, 118, 119, 123, 129, 130, 133,
+                                                178, 185, 186, 194, 195, 202, 208, 212, 214, 215, 221, 224,
+                                                255, 256, 257, 272, 274, 275, 315, 350, 369,
+                                                403, 404, 405, 407, 415, 443, 444, 445, 449, 450, 453, 454, 459, 460, 461, 464, 465, 473,
+                                                521, 592, 593,
+                                                668 };
         public static bool ShinyLockCheck(int species, string form, string ball = "")
         {
             if (ShinyLock.Contains(species))
@@ -166,6 +172,28 @@ namespace SysBot.Pokemon
             pk.SetMaximumPPCurrent(pk.Moves);
             pk.SetSuggestedHyperTrainingData();
             pk.SetSuggestedRibbons(la.EncounterMatch);
+        }
+
+        public static List<string> SpliceAtWord(string entry, int start, int length)
+        {
+            int counter = 0;
+            var temp = entry.Split('\n').Skip(start);
+            List<string> list = new();
+
+            if (entry.Length < length)
+            {
+                list.Add(entry ?? "");
+                return list;
+            }
+
+            foreach (var line in temp)
+            {
+                counter += line.Length + 2;
+                if (counter < length)
+                    list.Add(line.Trim());
+                else break;
+            }
+            return list;
         }
 
         public static void EncounterLogs(PKM pk, string filepath = "")

@@ -11,26 +11,49 @@ namespace SysBot.Pokemon.ConsoleApp
 {
     public static class Program
     {
-        private const string ConfigPath = "config.json";
+        private static string WorkingDirectory = AppContext.BaseDirectory;
+        private const string ConfigFileName = "config.json";
+
+        private static void CreateNewConfig(string ConfigPath)
+        {
+            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.FlexTrade };
+            var cfg = new ProgramConfig { Mode = ProgramMode.SWSH, Bots = new[] { bot } };
+            var created = JsonConvert.SerializeObject(cfg, GetSettings());
+            File.WriteAllText(ConfigPath, created);
+        }
 
         private static void Main(string[] args)
         {
+            String ConfigPath;
             Console.WriteLine("Starting up...");
-            if (args.Length > 1)
-                Console.WriteLine("This program does not support command line arguments.");
 
-            if (!File.Exists(ConfigPath))
+            if (args.Length > 0)
             {
-                ExitNoConfig();
+                ConfigPath = args[0];
+            }
+            else
+            {
+                ConfigPath = WorkingDirectory;
+            }
+
+            string ConfigFilePath = Path.Combine(ConfigPath, ConfigFileName);
+
+            if (!File.Exists(ConfigFilePath))
+            {
+                var hub = new PokeTradeHubConfig();
+                CreateNewConfig(ConfigFilePath);
+                hub.Folder.CreateDefaults(WorkingDirectory);
+                Console.WriteLine("New Config Generated. Edit the configuration and restart the bot.");
                 return;
             }
 
             try
             {
-                var lines = File.ReadAllText(ConfigPath);
+                var lines = File.ReadAllText(ConfigFilePath);
                 var cfg = JsonConvert.DeserializeObject<ProgramConfig>(lines, GetSettings()) ?? new ProgramConfig();
                 PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
                 BotContainer.RunBots(cfg);
+
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception)
@@ -39,18 +62,6 @@ namespace SysBot.Pokemon.ConsoleApp
                 Console.WriteLine("Unable to start bots with saved config file. Please copy your config from the WinForms project or delete it and reconfigure.");
                 Console.ReadKey();
             }
-        }
-
-        private static void ExitNoConfig()
-        {
-            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.FlexTrade };
-            var cfg = new ProgramConfig { Bots = new[] { bot } };
-            var created = JsonConvert.SerializeObject(cfg, GetSettings());
-            File.WriteAllText(ConfigPath, created);
-            Console.WriteLine("Created new config file since none was found in the program's path. Please configure it and restart the program.");
-            Console.WriteLine("It is suggested to configure this config file using the GUI project if possible, as it will help you assign values correctly.");
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadKey();
         }
 
         private static JsonSerializerSettings GetSettings() => new()
@@ -88,9 +99,12 @@ namespace SysBot.Pokemon.ConsoleApp
             LogUtil.Forwarders.Add((msg, ident) => Console.WriteLine($"{ident}: {msg}"));
             env.StartAll();
             Console.WriteLine($"Started all bots (Count: {prog.Bots.Length}.");
-            Console.WriteLine("Press any key to stop execution and quit. Feel free to minimize this window!");
-            Console.ReadKey();
-            env.StopAll();
+            Console.WriteLine("Press CTL+c to stop execution and quit.");
+            Console.CancelKeyPress += delegate {
+                env.StopAll();
+            };
+
+            while (true) { }
         }
 
         private static IPokeBotRunner GetRunner(ProgramConfig prog) => prog.Mode switch

@@ -13,6 +13,9 @@ namespace SysBot.Pokemon
         public PokeTradeHub(PokeTradeHubConfig config)
         {
             Config = config;
+            var giveawayPoolDatabase = new GiveawayPool(config);
+            GiveawayPoolDatabase = giveawayPoolDatabase;
+
             var pool = new PokemonPool<T>(config);
             Ledy = new LedyDistributor<T>(pool);
             BotSync = new BotSynchronizer(config.Distribution);
@@ -30,6 +33,7 @@ namespace SysBot.Pokemon
         public readonly ConcurrentPool<PokeRoutineExecutorBase> Bots = new();
         public bool TradeBotsReady => !Bots.All(z => z.Config.CurrentRoutineType == PokeRoutineType.Idle);
         public readonly TradeQueueManager<T> Queues;
+        public GiveawayPool GiveawayPoolDatabase;
 
         #region Distribution Queue
         public readonly LedyDistributor<T> Ledy;

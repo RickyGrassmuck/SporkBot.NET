@@ -29,7 +29,10 @@ namespace SysBot.Pokemon
         [Category(Operation), Description("Add extra time for slower Switches.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public TimingSettings Timings { get; set; } = new();
-
+       
+        [Category(Operation)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public GiveawaySettings Giveaway { get; set; } = new();
         // Bots
 
         [Category(Bots)]

@@ -11,6 +11,7 @@
         FixOT,
         TradeCord,
         Giveaway,
+        GiveawayUpload,
         SupportTrade,
     }
 }

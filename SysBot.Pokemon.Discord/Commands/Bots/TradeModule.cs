@@ -86,7 +86,7 @@ namespace SysBot.Pokemon.Discord
                 pk.ResetPartyStats();
 
                 var sig = Context.User.GetFavor();
-                await AddTradeToQueueAsync(code, Context.User.Username, pk, sig, Context.User).ConfigureAwait(false);
+                await AddTradeToQueueAsync(code, Context.User.Username, pk, sig).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -182,7 +182,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            await AddTradeToQueueAsync(code, usr.Username, pk, sig, usr).ConfigureAwait(false);
+            await AddTradeToQueueAsync(code, usr.Username, pk, sig).ConfigureAwait(false);
         }
 
         private static T? GetRequest(Download<PKM> dl)
@@ -197,7 +197,7 @@ namespace SysBot.Pokemon.Discord
             };
         }
 
-        private async Task AddTradeToQueueAsync(int code, string trainerName, T pk, RequestSignificance sig, SocketUser usr)
+        private async Task AddTradeToQueueAsync(int code, string trainerName, T pk, RequestSignificance sig)
         {
             if (!pk.CanBeTraded())
             {
@@ -212,7 +212,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            await QueueHelper<T>.AddToQueueAsync(Context, code, trainerName, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Specific, usr).ConfigureAwait(false);
+            await QueueHelper<T>.AddToQueueAsync(Context, code, trainerName, sig, pk, PokeRoutineType.LinkTrade, PokeTradeType.Specific).ConfigureAwait(false);
         }
     }
 }
